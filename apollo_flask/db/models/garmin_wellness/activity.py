@@ -16,7 +16,7 @@ class Activity_Summary(Base):
     start_time = Column(DateTime)
     start_time_offset = Column(INTERVAL)
 
-    duration = Column(Integer)
+    duration = Column(INTERVAL)
     
     avg_bike_cadence = Column(Float) #rounds per minute
     max_bike_cadence = Column(Float)

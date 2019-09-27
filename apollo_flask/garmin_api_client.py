@@ -26,7 +26,7 @@ def recieve_dailies():
                     summary.get('calendarDate') is not None else None,
                 start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
-                duration = summary.get('durationInSeconds'),
+                duration = to_interval(summary.get('durationInSeconds')),
                 steps = summary.get('steps'),
                 distance = summary.get('distanceInMeters'),
                 active_time = to_interval(summary.get('activeTimeInSeconds')),
@@ -78,7 +78,7 @@ def recieve_activities():
                 summary_id = summary.get('summaryId'),
                 start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
-                duration = summary.get('durationInSeconds'),
+                duration = to_interval(summary.get('durationInSeconds')),
                 
                 avg_bike_cadence = summary.get('averageBikeCadenceInRoundsPerMinute'),
                 max_bike_cadence = summary.get('maxBikeCadenceInRoundsPerMinute'),
@@ -127,7 +127,35 @@ def recieve_mua():
 
 @bp.route('/epochs', methods=['POST'])
 def recieve_epochs():
-    pass
+    epochs = request.get_json()['epochs']
+    with session_scope() as session:
+        for summary in epochs:
+            epoch_summary = epoch.Epoch_Summary(
+                epoch_uid = summary.get('userId'),
+                
+                summary_id = summary.get('summaryId'),
+                
+                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
+                start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
+                
+                activity_type = summary.get('activityType'),
+
+                duration = to_interval(summary.get('durationInSeconds')),
+                activeTime = to_interval(summary.get('activeTimeInSeconds')),
+    
+                steps = summary.get('steps'),
+                
+                distance = summary.get('distanceInMeters'),
+        
+                active_kilocalories = summary.get('activeKilocalories'),
+
+                met = summary.get('met'),
+
+                mean_motion_intensity = summary.get('meanMotionIntensity'),
+                max_motion_intensity = summary.get('maxMotionIntensity'))
+
+            update_db_from_api_response(session, epoch.Epoch_Summary, epoch_summary)     
+    return Response(status = 200)
 
 @bp.route('/sleeps', methods=['POST'])
 def recieve_sleeps():

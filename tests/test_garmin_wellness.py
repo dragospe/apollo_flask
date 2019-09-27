@@ -143,90 +143,34 @@ def test_update_db_from_api_response(app):
 
 
 
+
+########## test_recieve_* #####################
+#The following tests are going to use some hardcoded data. They're mainly here to
+#catch typos and make sure that endpoints are actually getting hit. Things may fail
+#silently if there *are* typos, so these tests are going to try to minimize this.
+#
+#In each, we first add the user id of the user (the data all comes from the same user, namely myself) so that FK constraints don't nuke us
+#when the test client POSTs json data.
+#
+#Feel free to approach with a better strategy.
+
+
+
+#Load a big ball of JSON so that we can test out recieving 
+#   data from garmin."""
+with open('tests/garmin_api_mega_response_data', 'rb') as f:
+        garmin_api_mega_response = json.load(f)
+
+
 def test_recieve_dailies(client,app):
-    #Some genuine data from the API data generator tool.
-    #TODO: put this data in a separate file. Maybe make this test grab
-    #arbitrary files from a particular directory, so that new testing data
-    #can just be tossed in?
-    dailies_dict = {'dailies' : [ {
-  "summaryId" : "sd3114376-5d8cd915-15180-6",
-  "activityType" : "WALKING",
-  "activeKilocalories" : 100,
-  "bmrKilocalories" : 7,
-  "steps" : 988,
-  "distanceInMeters" : 278.95,
-  "durationInSeconds" : 86400,
-  "activeTimeInSeconds" : 974,
-  "startTimeInSeconds" : 1569511701,
-  "startTimeOffsetInSeconds" : -18000,
-  "moderateIntensityDurationInSeconds" : 4320,
-  "vigorousIntensityDurationInSeconds" : 2100,
-  "floorsClimbed" : 6,
-  "minHeartRateInBeatsPerMinute" : 51,
-  "maxHeartRateInBeatsPerMinute" : 72,
-  "averageHeartRateInBeatsPerMinute" : 95,
-  "restingHeartRateInBeatsPerMinute" : 47,
-  "timeOffsetHeartRateSamples" : {
-    "4873" : 51,
-    "4936" : 68,
-    "7801" : 65,
-    "11614" : 64,
-    "13686" : 72
-  },
-  "stepsGoal" : 6935,
-  "netKilocaloriesGoal" : 18501,
-  "intensityDurationGoalInSeconds" : 5700,
-  "floorsClimbedGoal" : 20,
-  "averageStressLevel" : 28,
-  "maxStressLevel" : 14,
-  "stressDurationInSeconds" : 905,
-  "restStressDurationInSeconds" : 181,
-  "activityStressDurationInSeconds" : 69,
-  "lowStressDurationInSeconds" : 50,
-  "mediumStressDurationInSeconds" : 67,
-  "highStressDurationInSeconds" : 45
-  }, {
-  "summaryId" : "sd3114376-5d8e2a95-ef-6",
-  "activityType" : "WALKING",
-  "activeKilocalories" : 87,
-  "bmrKilocalories" : 41,
-  "steps" : 1057,
-  "distanceInMeters" : 465.4,
-  "durationInSeconds" : 239,
-  "activeTimeInSeconds" : 218,
-  "startTimeInSeconds" : 1569598101,
-  "startTimeOffsetInSeconds" : -18000,
-  "moderateIntensityDurationInSeconds" : 3840,
-  "vigorousIntensityDurationInSeconds" : 1980,
-  "floorsClimbed" : 5,
-  "minHeartRateInBeatsPerMinute" : 51,
-  "maxHeartRateInBeatsPerMinute" : 72,
-  "averageHeartRateInBeatsPerMinute" : 52,
-  "restingHeartRateInBeatsPerMinute" : 53,
-  "timeOffsetHeartRateSamples" : {
-    "4873" : 51,
-    "4936" : 68,
-    "7801" : 65,
-    "11614" : 64,
-    "13686" : 72
-  },
-  "stepsGoal" : 8454,
-  "netKilocaloriesGoal" : 4583,
-  "intensityDurationGoalInSeconds" : 6120,
-  "floorsClimbedGoal" : 19,
-  "averageStressLevel" : 36,
-  "maxStressLevel" : 11,
-  "stressDurationInSeconds" : 856,
-  "restStressDurationInSeconds" : 148,
-  "activityStressDurationInSeconds" : 60,
-  "lowStressDurationInSeconds" : 56,
-  "mediumStressDurationInSeconds" : 67,
-  "highStressDurationInSeconds" : 48
-  } ]}
+    #Add the user
+    with session_scope() as session: 
+        uid = User_Id(user_id = "5c7d25f1-7580-4309-8e36-b00bce768ae5", active = True)
+        session.add(uid)
 
     #Send the data
     client.post('/api_client/garmin/dailies', 
-                data=json.dumps(dailies_dict), 
+                data = json.dumps(garmin_api_mega_response),
                 content_type='application/json')
 
     #Ensure the data got put in:
@@ -242,53 +186,15 @@ def test_recieve_dailies(client,app):
         assert summary2.start_time == datetime.fromtimestamp(1569598101)
     
 def test_recieve_activities(client, app):
-    #Define data
-    activity_dict = {'activities': [ {'userId': '5c7d25f1-7580-4309-8e36-b00bce768ae5',
-   'userAccessToken': 'f49f259b-a71b-4a28-a90b-fe7f0e1c7190',
-   'summaryId': '13931969',
-   'durationInSeconds': 5328,
-   'startTimeInSeconds': 1568829554,
-   'startTimeOffsetInSeconds': -18000,
-   'activityType': 'WALKING',
-   'averageHeartRateInBeatsPerMinute': 86,
-   'averageRunCadenceInStepsPerMinute': 35.0,
-   'averageSpeedInMetersPerSecond': 0.4819424,
-   'averagePaceInMinutesPerKilometer': 18.423002,
-   'activeKilocalories': 227,
-   'distanceInMeters': 4682.99,
-   'maxHeartRateInBeatsPerMinute': 126,
-   'maxPaceInMinutesPerKilometer': 3.2194798,
-   'maxRunCadenceInStepsPerMinute': 120.0,
-   'maxSpeedInMetersPerSecond': 4.1503243,
-   'steps': 1623,
-   'totalElevationGainInMeters': 21.97},
-  {'userId': '5c7d25f1-7580-4309-8e36-b00bce768ae5',
-   'userAccessToken': 'f49f259b-a71b-4a28-a90b-fe7f0e1c7190',
-   'summaryId': '14279282',
-   'durationInSeconds': 4357,
-   'startTimeInSeconds': 1568915954,
-   'startTimeOffsetInSeconds': -18000,
-   'activityType': 'WALKING',
-   'averageHeartRateInBeatsPerMinute': 86,
-   'averageRunCadenceInStepsPerMinute': 36.0,
-   'averageSpeedInMetersPerSecond': 0.36856723,
-   'averagePaceInMinutesPerKilometer': 18.140942,
-   'activeKilocalories': 246,
-   'distanceInMeters': 4475.72,
-   'maxHeartRateInBeatsPerMinute': 140,
-   'maxPaceInMinutesPerKilometer': 3.5551832,
-   'maxRunCadenceInStepsPerMinute': 119.0,
-   'maxSpeedInMetersPerSecond': 4.6923165,
-   'steps': 1623,
-   'totalElevationGainInMeters': 24.03} ] }
-
-    #First add the appropriate user_id so that the Foriegn Key cosntraint holds
-    with session_scope() as session:
-        uid = User_Id(user_id = activity_dict['activities'][0]['userId'], active = True)
+    #Add the user
+    with session_scope() as session: 
+        uid = User_Id(user_id = "5c7d25f1-7580-4309-8e36-b00bce768ae5", active = True)
         session.add(uid)
 
+ 
+
     client.post('/api_client/garmin/activities', 
-                data=json.dumps(activity_dict),
+                data = json.dumps(garmin_api_mega_response),
                 content_type = 'application/json')
 
     #Ensure the data got put in:
@@ -302,4 +208,24 @@ def test_recieve_activities(client, app):
         
         summary2 =  query.filter_by(summary_id = "14279282").first()
         assert summary2.start_time == datetime.fromtimestamp(1568915954)
+
+def test_recieve_epochs(client, app):
+    #Add the user
+    with session_scope() as session: 
+        uid = User_Id(user_id = "5c7d25f1-7580-4309-8e36-b00bce768ae5", active = True)
+        session.add(uid)
+
+    client.post('/api_client/garmin/epochs',
+                data=json.dumps(garmin_api_mega_response),
+                content_type = 'application/json')
+
+    with session_scope() as session:
+        query = session.query(epoch.Epoch_Summary)
+        assert query.count() >= 1, "No epochs were added."
+       
+        epoch1 =  query.filter_by(summary_id = "sd3114376-5d8d0382-8").first()
+        assert epoch1.start_time == datetime.fromtimestamp( 1569522562)
+        
+        epoch2 =  query.filter_by(summary_id = "sd3114376-5d8cf8f6-6").first()
+        assert epoch2.start_time == datetime.fromtimestamp(1569519862)
 

@@ -13,7 +13,7 @@ from sqlalchemy.orm import relationship
 
 from apollo_flask.db import Base
 
-#The activity types defined by the wellness API
+#The activity types defined by the wellness API in appendix A
 ACTIVITY_TYPE_ENUM =  Enum('UNCATEGORIZED',
 	'SEDENTARY',
 	'SLEEP',
@@ -75,3 +75,8 @@ ACTIVITY_TYPE_ENUM =  Enum('UNCATEGORIZED',
 STRESS_QUALIFIER_ENUM = Enum( 'unknown', 'calm', 'balanced', 'stressful',
     'very_stressful', 'calm_awake', 'balanced_awake', 'stressful_awake',
     'very_stressful_awake', name="Stress_Qualifier", schema = 'garmin_wellness')
+
+#From appendix B of the API specification
+WELLNESS_MONITORING_INTENSITY_ENUM = Enum('SEDENTARY', 'ACTIVE',
+    'HIGHLY_ACTIVE', name='Wellness_Monitoring_Intensity', 
+    schema= 'garmin_wellness')

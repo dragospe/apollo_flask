@@ -15,7 +15,7 @@ class Daily_Summary(Base):
     calendar_date = Column(Date)
     start_time = Column(DateTime)
     start_time_offset = Column(INTERVAL)
-    duration = Column(Integer)
+    duration = Column(INTERVAL)
     steps = Column(Integer)
     distance = Column(Float)
     active_time = Column(INTERVAL)
