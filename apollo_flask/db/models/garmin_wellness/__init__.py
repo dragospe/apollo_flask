@@ -1,1 +1,1 @@
-from . import daily_summary 
+from . import daily_summary, activity 

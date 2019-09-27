@@ -34,7 +34,7 @@ class User_Id(Base):
     active = Column(Boolean, nullable=False) 
     access_tokens = relationship('Access_Token')
     daily_summaries = relationship('Daily_Summary', backref='user_id')
-
+    activity_summaries = relationship('Activity_Summary', backref='user_id')
 
     def __repr__(self):
         return "<Garmin_User_ID(user_id = '%s', access_tokens = '%s', active = '%s')>"\

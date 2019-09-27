@@ -8,25 +8,18 @@ from flask import (
 from apollo_flask.db import session_scope
 from apollo_flask.db.models.garmin_wellness import *
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import dateutil.parser
 
-bp = Blueprint('garmi_api_client', __name__, url_prefix='/api_client/garmin')
+bp = Blueprint('garmin_api_client', __name__, url_prefix='/api_client/garmin')
 
 @bp.route('/dailies', methods=['POST'])
 def recieve_dailies():
     dailies = request.get_json()['dailies']
-    dailies_list = []
     with session_scope() as session:
         for summary in dailies:
-            #If a summary in the database with the same summary ID exists, fetch it.
-            #We need to update it instead of adding a new one.
-            db_daily = session.query(
-                daily_summary.Daily_Summary).filter_by(
-                    summary_id = summary['summaryId']).first()
-
             daily = daily_summary.Daily_Summary(
-                user_id = summary.get('userId'),
+                daily_summary_uid = summary.get('userId'),
                 summary_id = summary.get('summaryId'),
                 calendar_date = dateutil.parser.parse(
                     summary.get('calendarDate')).date() if 
@@ -67,25 +60,66 @@ def recieve_dailies():
                 net_kcal_goal = summary.get('netKilocaloriesGoal'),
                 intensity_duration_goal = to_interval(summary.get('intensityDurationGoal')),
                 floors_climbed_goal = summary.get('floorsClimbedGoal'))
-
-            if db_daily is not None and db_daily.duration <= daily.duration:
-                #The summary already existed, but needs to be updated. 
-                session.add(db_daily)
-                clone_row(daily, db_daily)
-            elif db_daily is not None and db_daily.duration > daily.duration:
-                #The summary already existed, but does not need to be updated
-                pass
-            else:
-                #The summary did not exist; add it
-                session.add(daily)
-            #Commit, so that the data is persistant for the next loop.
-            session.commit
+            
+            update_db_from_api_response(session, daily_summary.Daily_Summary, daily)
 
     return Response(status=200)
 
 @bp.route('/activities', methods=['POST'])
 def recieve_activities():
-    pass
+    #NOTE: This is not (at this time) storing parent/child activity data, becuase
+    # I can't find any documentation on this except that it may exist. See the
+    # Garmin Wellness Activity_Summary data model for more details.
+    activities = request.get_json()['activities']
+    with session_scope() as session:
+        for summary in activities:
+            activity_summary = activity.Activity_Summary(
+                activity_uid = summary.get('userId'),
+                summary_id = summary.get('summaryId'),
+                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
+                start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
+                duration = summary.get('durationInSeconds'),
+                
+                avg_bike_cadence = summary.get('averageBikeCadenceInRoundsPerMinute'),
+                max_bike_cadence = summary.get('maxBikeCadenceInRoundsPerMinute'),
+                
+                avg_heart_rate = summary.get('averageHeartRateInBeatsPerMinute'),
+                max_heart_rate = summary.get('maxHeartRateInBeatsPerMinute'),
+            
+                avg_run_cadence = summary.get('averageRunCadenceInStepsPerMinute'),
+                max_run_cadence = summary.get('maxRunCadenceInStepsPerMinute'),
+
+                avg_speed = summary.get('averageSpeedInMetersPerSecond'),
+                max_speed = summary.get('maxSpeedInMetersPerSecond'),
+
+                avg_swim_cadence = summary.get('averageSwimCadenceInStrokesPerMinute'),
+
+                avg_pace = summary.get('averagePaceInMinutesPerKilometer'),
+                max_pace = summary.get('maxPaceInMinutesPerKilometer'),
+            
+                active_kcal = summary.get('activeKilocalories'),
+                
+                device_name = summary.get('deviceName'),
+        
+                steps = summary.get('steps'),
+                
+                distance = summary.get('distanceInMeters'),
+        
+                number_of_active_lengths = summary.get('numberOfActiveLengths'),
+                
+                starting_latitude = summary.get('startingLatitudeInDegree'),
+                starting_longitude = summary.get('startingLongitudeInDegree'),
+                
+                elevation_gain = summary.get('totalElevationGainInMeters'), 
+                elevation_loss = summary.get('totalElevationLossInMeter'),
+
+                #is_parent = ???
+                #parent_summary_id = ???
+                
+                manually_entered = summary.get('manual'))
+            update_db_from_api_response(session, activity.Activity_Summary, activity_summary)     
+            
+    return Response(status = 200)
 
 @bp.route('/mua', methods=['POST'])
 def recieve_mua():
@@ -132,13 +166,67 @@ def to_interval(x):
     if x == None:
         return None
     else:
-        return str(x) + 's'
+        return timedelta(seconds = x) 
 
 def clone_row(from_row, to_row):
     """Helper function to clone mapped objects IN PLACE. This helps we when take 
     the result of a query, and want to update it to match newer data."""
     
     for k in from_row.__table__.columns.keys():
-        to_row.__dict__[k] = from_row.__dict__[k]
+        setattr(to_row,k, getattr(from_row,k))
+
+def update_db_from_api_response(session, 
+                                table, 
+                                incoming_data,
+                                match_attr = 'summary_id',
+                                order_attr = 'duration'):
+    """[Parameters:]
+
+        * session: Uses the session that is passed in (so another does
+            not need to be created.)
+        * table: The table in which we should look to find existing data
+        * json_resp: The JSON response object that we are querying to determine if
+            an update must occur.
+        * match_attr (default: 'summaryId'): The attribute we should use 
+            to match the incoming data with existing data.
+        * order_attr (default: duration): The attribute that denotes which
+            database object is more recent. If obj_1.order_attr < obj_2.order_attr,
+            then obj_2 is considered more recent.
+
+    [Background:] 
+
+    When a JSON response is recieved from the garmin wellness API, it may
+    include data that is already present in the database in some form. This 
+    helper function should be used to streamline deciding whether or not the data
+    that is present in the database matches any incoming data, and if so, whether
+    the incoming data or the existing data is more recent, and updating as necessary.
     
-    return to_row
+    In particular, section 6.1 of the Wellness REST API Specification states:
+
+        "The Health API provides updates to previously issued summary records. 
+        Updates are summary data records for a given user with the same start  
+        time and summary type as a previous summary data record and a duration
+        that is either equal to or greater than the previous summary data’s
+        duration."
+
+    And so this is the criterion we operate on.
+    """
+    
+    #We don't know the attribute we're matching on before runtime, so we've got 
+    # to throw it in a dictionary and unpack when we hit our query.
+    filter_by_kw = {match_attr : getattr(incoming_data,match_attr)}
+
+    #Grab the existing data
+    db_data = session.query(table).filter_by(**filter_by_kw).first()
+            
+    if db_data is not None and \
+            getattr(db_data, order_attr) <= getattr(incoming_data, order_attr):
+        #The data already existed in the database, but the incoming data is more recent.
+        clone_row(incoming_data, db_data)
+    elif db_data is not None and \
+            getattr(db_data, order_attr) > getattr(incoming_data, order_attr):
+        #Existing data does not need to be updated
+        pass
+    else:
+        #Incoming data did not already exist
+        session.add(incoming_data)
