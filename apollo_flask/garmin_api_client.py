@@ -214,7 +214,7 @@ def recieve_body_comp():
                 weight = summary.get('weightInGrams')
             )
             
-            update_db_from_api_response(session, body_comp.Body_Composition, bc)
+            update_db_from_api_response(session, body_comp.Body_Composition, bc, match_attr= 'measurement_time', order_attr = 'measurement_time')
 
     return Response(status = 200)
 
@@ -233,7 +233,9 @@ def recieve_stress_details():
                 
                 start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
-                
+                duration = to_interval(summary.get('durationInSeconds')),                
+
+
                 calendar_date = dateutil.parser.parse(
                     summary.get('calendarDate')).date() if 
                     summary.get('calendarDate') is not None else None,
@@ -242,7 +244,8 @@ def recieve_stress_details():
                 body_battery_values_map = summary.get('timeOffsetBodyBatteryDetails')
             )
 
-            update_db_from_api_response(session, stress.Stress_Details, stress_summary)
+            update_db_from_api_response(session, stress.Stress_Details, stress_summary,
+                    match_attr='start_time', order_attr = 'duration')
 
     
     return Response(status = 200)
@@ -266,13 +269,17 @@ def recieve_user_metrics():
             )
             
             update_db_from_api_response(session, user_metrics.User_Metrics,
-                 metric_summary, order_attr = 'calendar_date')
+                 metric_summary, match_attr = 'calendar_date',
+                 order_attr = 'calendar_date')
 
     return Response(status = 200)
 
 @bp.route('/moveiq', methods=['POST'])
 def recieve_moveiq():
-    move_iq_summaries = request.get_json()['moveiq']
+    with open('json_dump', 'w') as f:
+        json.dump(request.get_json(),f)
+
+    move_iq_summaries = request.get_json()['moveIQActivities']
     with session_scope() as session:
         for summary in move_iq_summaries:
             move_iq_summary = move_iq.Move_Iq(
@@ -285,11 +292,12 @@ def recieve_moveiq():
                     summary.get('calendarDate') is not None else None,
                 start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('offsetInSeconds')),
+                duration = to_interval(summary.get('durationInSeconds')),
     
                 activity_type = summary.get('activityType'),
                 activity_subtype = summary.get('activitySubType')
             )
-            update_db_from_api_response(session, move_iq.Move_Iq, move_iq_summary, order_attr = 'calendar_date')
+            update_db_from_api_response(session, move_iq.Move_Iq, move_iq_summary, order_attr = 'duration')
                 
     return Response(status = 200)
 
@@ -335,7 +343,7 @@ def clone_row(from_row, to_row):
 def update_db_from_api_response(session, 
                                 table, 
                                 incoming_data,
-                                match_attr = 'summary_id',
+                                match_attr = 'start_time',
                                 order_attr = 'duration'):
     """[Parameters:]
 
@@ -344,9 +352,9 @@ def update_db_from_api_response(session,
         * table: The table in which we should look to find existing data
         * json_resp: The JSON response object that we are querying to determine if
             an update must occur.
-        * match_attr (default: 'summaryId'): The attribute we should use 
+        * match_attr (default: 'start_time'): The attribute we should use 
             to match the incoming data with existing data.
-        * order_attr (default: duration): The attribute that denotes which
+        * order_attr (default: 'duration'): The attribute that denotes which
             database object is more recent. If obj_1.order_attr < obj_2.order_attr,
             then obj_2 is considered more recent.
 

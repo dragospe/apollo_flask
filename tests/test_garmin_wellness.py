@@ -304,6 +304,12 @@ def test_receive_pulse_ox(client, app):
             data=json.dumps(garmin_api_mega_response),
             content_type = 'application/json')
 
+    with session_scope() as session:
+        query = session.query(pulse_ox.Pulse_Ox)
+        assert query.count() == 2, "Exactly 2 pulse ox measurements were not added."
+        
+        po1 = query.filter_by(summary_id = 'sd3114376-5d976b16').first()
+        assert po1.spo2_value_map['0']==100
 
 
 #### Helpers ####
