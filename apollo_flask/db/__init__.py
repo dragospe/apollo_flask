@@ -65,9 +65,6 @@ def init_db():
     _conn.execute('commit')    
 
     # Drop the database if it exists
-    
-
-    #Create all schemas base if it exists:
     try:
         _conn.execute('DROP DATABASE "' + current_app.config['DATABASE_NAME'] + '"')
         print("INFO: Database dropped.")

@@ -122,11 +122,6 @@ def recieve_activities():
             
     return Response(status = 200)
 
-@bp.route('/manuallyUpdatedActivities', methods=['POST'])
-def recieve_mua():
-    """Placeholder."""
-    pass
-
 @bp.route('/epochs', methods=['POST'])
 def recieve_epochs():
     epochs = request.get_json()['epochs']
@@ -217,10 +212,6 @@ def recieve_body_comp():
             update_db_from_api_response(session, body_comp.Body_Composition, bc, match_attr= 'measurement_time', order_attr = 'measurement_time')
 
     return Response(status = 200)
-
-@bp.route('/thirdPartyDailies', methods=['POST'])
-def recieve_tpd():
-    pass
 
 @bp.route('/stressDetails', methods=['POST'])
 def recieve_stress_details():
