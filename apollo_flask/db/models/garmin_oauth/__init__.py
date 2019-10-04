@@ -36,6 +36,12 @@ class User_Id(Base):
     daily_summaries = relationship('Daily_Summary', backref='user_id')
     activity_summaries = relationship('Activity_Summary', backref='user_id')
     epoch_summaries = relationship('Epoch_Summary', backref='user_id')
+    sleep_summaries = relationship('Sleep_Summary', backref='user_id')
+    body_compositions = relationship('Body_Composition', backref='user_id')
+    stress_details = relationship('Stress_Details', backref='user_id')
+    user_metrics = relationship('User_Metrics', backref='user_id')
+    move_iq_summaries = relationship('Move_Iq', backref='user_id')
+    pulse_ox_summaries = relationship('Pulse_Ox', backref='user_id')
 
     def __repr__(self):
         return "<Garmin_User_ID(user_id = '%s', access_tokens = '%s', active = '%s')>"\

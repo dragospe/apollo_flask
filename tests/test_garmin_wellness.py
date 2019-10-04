@@ -163,10 +163,7 @@ with open('tests/garmin_api_mega_response_data', 'rb') as f:
 
 
 def test_recieve_dailies(client,app):
-    #Add the user
-    with session_scope() as session: 
-        uid = User_Id(user_id = "5c7d25f1-7580-4309-8e36-b00bce768ae5", active = True)
-        session.add(uid)
+    add_dummy_user()
 
     #Send the data
     client.post('/api_client/garmin/dailies', 
@@ -186,12 +183,7 @@ def test_recieve_dailies(client,app):
         assert summary2.start_time == datetime.fromtimestamp(1569598101)
     
 def test_recieve_activities(client, app):
-    #Add the user
-    with session_scope() as session: 
-        uid = User_Id(user_id = "5c7d25f1-7580-4309-8e36-b00bce768ae5", active = True)
-        session.add(uid)
-
- 
+    add_dummy_user() 
 
     client.post('/api_client/garmin/activities', 
                 data = json.dumps(garmin_api_mega_response),
@@ -210,10 +202,7 @@ def test_recieve_activities(client, app):
         assert summary2.start_time == datetime.fromtimestamp(1568915954)
 
 def test_recieve_epochs(client, app):
-    #Add the user
-    with session_scope() as session: 
-        uid = User_Id(user_id = "5c7d25f1-7580-4309-8e36-b00bce768ae5", active = True)
-        session.add(uid)
+    add_dummy_user()
 
     client.post('/api_client/garmin/epochs',
                 data=json.dumps(garmin_api_mega_response),
@@ -228,4 +217,99 @@ def test_recieve_epochs(client, app):
         
         epoch2 =  query.filter_by(summary_id = "sd3114376-5d8cf8f6-6").first()
         assert epoch2.start_time == datetime.fromtimestamp(1569519862)
+
+#def test_recieve_sleep(client, app):
+    #Add the user
+    #with session_scope() as session: 
+    #    uid = User_Id(user_id = "5c7d25f1-7580-4309-8e36-b00bce768ae5", active = True)
+    #    session.add(uid)
+
+    #client.post('/api_client/garmin/sleeps',
+    #            data=json.dumps(garmin_api_mega_response),
+    #            content_type = 'application/json')
+
+    #with session_scope() as session:
+    #    query = session.query(sleep.Sleep_Summary)
+    #    assert query.count() == 8, "Exactly 8 sleeps were not added."
+       
+    #    sleep1 =  query.filter_by(summary_id = "d3114376-5d8d7aaf-9396").first()
+    #    assert sleep1.start_time == datetime.fromtimestamp(1569553071)
+        
+    #    sleep2 =  query.filter_by(summary_id = 'x3114376-5d5fb86c-4dd0').first()
+    #    assert sleep2.start_time == datetime.fromtimestamp(1566554220)
+
+def test_recieve_body_comps(client, app):
+    add_dummy_user()
+    client.post('/api_client/garmin/bodyComps',
+                data=json.dumps(garmin_api_mega_response),
+                content_type = 'application/json')
+
+    with session_scope() as session:
+        query = session.query(body_comp.Body_Composition)
+        assert query.count() == 1, "Exactly 1 body comp was not added."
+       
+        bc1 =  query.filter_by(summary_id = "x3114376-5d9754d4").first()
+        assert bc1.weight == 90718
+        
+
+def test_recieve_stress(client, app):
+    add_dummy_user()
+
+    client.post('/api_client/garmin/stressDetails',
+                data=json.dumps(garmin_api_mega_response),
+                content_type = 'application/json')
+    
+    with session_scope() as session:
+        query = session.query(stress.Stress_Details)
+        assert query.count() == 2, "Exactly 2 stress details were not added."
+        
+        stress1 = query.filter_by(summary_id = "sd3114376-5d961996-232").first()
+        assert stress1.start_time == datetime.fromtimestamp(1570118038)
+
+        stress2 = query.filter_by(start_time = datetime.fromtimestamp(1570204438)).first()
+        assert stress2.stress_level_values_map['141'] == 30
+
+def test_receive_user_metrics(client, app):
+    add_dummy_user()
+    client.post('/api_client/garmin/userMetrics',
+            data=json.dumps(garmin_api_mega_response),
+            content_type = 'application/json')
+    
+    with session_scope() as session:
+        query = session.query(user_metrics.User_Metrics)
+        assert query.count() == 2, "Exactly 2 user metrics summaries were not added."
+        
+        um1 = query.filter_by(summary_id = "sd3114376-5d961996").first()
+        assert um1.vo2_max == 42
+
+        um2 = query.filter_by(summary_id = 'sd3114376-5d976b16').first()
+        assert um2.fitness_age == 60
+
+def test_receive_move_iq(client, app):
+    add_dummy_user()
+    client.post('/api_client/garmin/moveiq',
+            data=json.dumps(garmin_api_mega_response),
+            content_type = 'application/json')
+    
+    with session_scope() as session:
+        query = session.query(move_iq.Move_Iq)
+        assert query.count() == 2, "Exactly 2 move iq summaries were not added."
+       
+        miq1 = query.filter_by(summary_id = 'sd3114376-5d961996Running2d').first()
+        assert miq1.activity_type == "Running"
+
+def test_receive_pulse_ox(client, app):
+    add_dummy_user()
+    client.post('/api_client/garmin/pulseOx',
+            data=json.dumps(garmin_api_mega_response),
+            content_type = 'application/json')
+
+
+
+#### Helpers ####
+def add_dummy_user():
+    with session_scope() as session: 
+        uid = User_Id(user_id = "5c7d25f1-7580-4309-8e36-b00bce768ae5", active = True)
+        session.add(uid)
+
 

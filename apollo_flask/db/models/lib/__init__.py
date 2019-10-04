@@ -80,3 +80,6 @@ STRESS_QUALIFIER_ENUM = Enum( 'unknown', 'calm', 'balanced', 'stressful',
 WELLNESS_MONITORING_INTENSITY_ENUM = Enum('SEDENTARY', 'ACTIVE',
     'HIGHLY_ACTIVE', name='Wellness_Monitoring_Intensity', 
     schema= 'garmin_wellness')
+
+#From section 7.8 of the API specification
+SLEEP_VALIDATION_ENUM = Enum('MANUAL', 'DEVICE', 'AUTO_TENTATIVE', 'AUTO_FINAL', 'AUTO_MANUAL', 'ENHANCED_TENTATIVE', 'ENHANCED_FINAL', name='Sleep_Validation', schema = 'garmin_wellness')

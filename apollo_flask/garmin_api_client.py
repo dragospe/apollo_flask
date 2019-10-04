@@ -1,5 +1,6 @@
 """This blueprint recieves data from the Garmin Wellness API push service."""
 import functools
+import json
 
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for, Response
@@ -121,8 +122,9 @@ def recieve_activities():
             
     return Response(status = 200)
 
-@bp.route('/mua', methods=['POST'])
+@bp.route('/manuallyUpdatedActivities', methods=['POST'])
 def recieve_mua():
+    """Placeholder."""
     pass
 
 @bp.route('/epochs', methods=['POST'])
@@ -159,32 +161,159 @@ def recieve_epochs():
 
 @bp.route('/sleeps', methods=['POST'])
 def recieve_sleeps():
-    pass
+    sleeps = request.get_json()['sleeps']
+    with session_scope() as session:
+        for summary in sleeps:
+            sleep_summary = sleep.Sleep_Summary(
+                sleep_uid = summary.get('userId'),
+                
+                summary_id = summary.get('summaryId'),
+                
+                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
+                start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
+                
+                duration = to_interval(summary.get('durationInSeconds')),
+                unmeasurable_sleep_time = to_interval(summary.get('unmeasureableSleepInSeconds')),
+                deep_sleep_duration = to_interval(summary.get(
+                    'deepSleepDurationInSeconds')),
+                light_sleep_duration = to_interval(summary.get(
+                    'lightSleepDurationInSeconds')),   
+                rem_sleep_duration = to_interval(summary.get('remSleepInSeconds')),
+                awake_duration = to_interval(summary.get('awakeDurationInSeconds')),
+                
+                sleep_levels_map = summary.get('sleepLevelsMap'),
+                validation = summary.get('validation'),
+            
+                sleep_sp02_map = summary.get('timeOffsetSleepSpo2')     
+            )                
 
-@bp.route('/body_comp', methods=['POST'])
+            update_db_from_api_response(session, sleep.Sleep_Summary, sleep_summary)     
+
+    return Response(status = 200)
+
+@bp.route('/bodyComps', methods=['POST'])
 def recieve_body_comp():
-    pass
+    body_comps = request.get_json()['bodyComps']
+    with session_scope() as session:
+        for summary in body_comps:
+            bc = body_comp.Body_Composition(
+                body_composition_uid = summary.get('UserId'),
 
-@bp.route('/tpd', methods=['POST'])
+                summary_id = summary.get('summaryId'),
+
+                measurement_time = datetime.fromtimestamp(summary.get('measurementTimeInSeconds')),
+                measurement_time_offset = to_interval(summary.get('measurementTimeOffsetInSeconds')),
+
+                muscle_mass = summary.get('muscleMassInGrams'),
+                bone_mass = summary.get('boneMassInGrams'),
+            
+                body_water_percentage = summary.get('bodyWaterInPercent'),
+                body_fat_percentage = summary.get('bodyFatInPercent'),
+                body_mass_index = summary.get('bodyMassIndex'),
+
+                weight = summary.get('weightInGrams')
+            )
+            
+            update_db_from_api_response(session, body_comp.Body_Composition, bc)
+
+    return Response(status = 200)
+
+@bp.route('/thirdPartyDailies', methods=['POST'])
 def recieve_tpd():
     pass
 
-@bp.route('/stress', methods=['POST'])
-def recieve_stress():
-    pass
+@bp.route('/stressDetails', methods=['POST'])
+def recieve_stress_details():
+    stress_details = request.get_json()['stressDetails']
+    with session_scope() as session:
+        for summary in stress_details:
+            stress_summary = stress.Stress_Details(
+                stress_details_uid = summary.get('UserId'),
+                summary_id = summary.get('summaryId'),
+                
+                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
+                start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
+                
+                calendar_date = dateutil.parser.parse(
+                    summary.get('calendarDate')).date() if 
+                    summary.get('calendarDate') is not None else None,
+    
+                stress_level_values_map = summary.get('timeOffsetStressLevelValues'),
+                body_battery_values_map = summary.get('timeOffsetBodyBatteryDetails')
+            )
 
-@bp.route('/user_metric', methods=['POST'])
-def recieve_user_metric():
-    pass
+            update_db_from_api_response(session, stress.Stress_Details, stress_summary)
+
+    
+    return Response(status = 200)
+
+
+@bp.route('/userMetrics', methods=['POST'])
+def recieve_user_metrics():
+    user_metrics_summaries = request.get_json()['userMetrics']
+    with session_scope() as session:
+        for summary in user_metrics_summaries:
+            metric_summary = user_metrics.User_Metrics(
+                user_metrics_uid = summary.get('userId'),
+                summary_id = summary.get('summaryId'),
+        
+                calendar_date = dateutil.parser.parse(
+                    summary.get('calendarDate')).date() if 
+                    summary.get('calendarDate') is not None else None,
+        
+                vo2_max = summary.get('vo2Max'),
+                fitness_age = summary.get('fitnessAge')
+            )
+            
+            update_db_from_api_response(session, user_metrics.User_Metrics,
+                 metric_summary, order_attr = 'calendar_date')
+
+    return Response(status = 200)
 
 @bp.route('/moveiq', methods=['POST'])
 def recieve_moveiq():
-    pass
+    move_iq_summaries = request.get_json()['moveiq']
+    with session_scope() as session:
+        for summary in move_iq_summaries:
+            move_iq_summary = move_iq.Move_Iq(
+                
+                move_iq_uid = summary.get('userId'),
+                summary_id = summary.get('summaryId'),
+                
+                calendar_date = dateutil.parser.parse(
+                    summary.get('calendarDate')).date() if 
+                    summary.get('calendarDate') is not None else None,
+                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
+                start_time_offset = to_interval(summary.get('offsetInSeconds')),
+    
+                activity_type = summary.get('activityType'),
+                activity_subtype = summary.get('activitySubType')
+            )
+            update_db_from_api_response(session, move_iq.Move_Iq, move_iq_summary, order_attr = 'calendar_date')
+                
+    return Response(status = 200)
 
-@bp.route('/pulseox', methods=['POST'])
+@bp.route('/pulseOx', methods=['POST'])
 def recieve_pulseox():
-    pass
+    pulse_ox_summaries = request.get_json()['pulseOx']
+    with session_scope() as session:
+        for summary in pulse_ox_summaries:
+            pulse_ox_summary = pulse_ox.Pulse_Ox(
+                pulse_ox_uid = summary.get('userId'),
+                summary_id = summary.get('summaryId'),
 
+                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
+                start_time_offset = to_interval(summary.get('offsetInSeconds')),
+                duration = to_interval(summary.get('durationInSeconds')),
+                
+                spo2_value_map = summary.get('timeOffsetSpo2Values'),
+            
+                on_demand = summary.get('OnDemand')
+            )
+    
+            update_db_from_api_response(session, pulse_ox.Pulse_Ox, pulse_ox_summary)
+    
+    return Response(status = 200)
 
 ################################### Helper Functions ############################
 
@@ -237,7 +366,9 @@ def update_db_from_api_response(session,
         that is either equal to or greater than the previous summary data’s
         duration."
 
-    And so this is the criterion we operate on.
+    And so this is the criterion we (generally) operate on. Certain summaries (e.g.
+    sleep summaries) are ordered based on different criteria, and thus we allow
+    some flexibility in the arguments to this method.
     """
     
     #We don't know the attribute we're matching on before runtime, so we've got 
