@@ -294,7 +294,11 @@ def recieve_moveiq():
 
 @bp.route('/pulseOx', methods=['POST'])
 def recieve_pulseox():
-    pulse_ox_summaries = request.get_json()['pulseOx']
+    print("\n\n *****\nPulseOx Hit\n*****\n\n")
+    with open('podump', 'w') as f:
+        json.dump(request.get_json(),f)
+
+    pulse_ox_summaries = request.get_json()['pulseox']
     with session_scope() as session:
         for summary in pulse_ox_summaries:
             pulse_ox_summary = pulse_ox.Pulse_Ox(
