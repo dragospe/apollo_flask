@@ -10,7 +10,8 @@ class Pulse_Ox(Base):
     pulse_ox_uid = Column(String, ForeignKey('garmin_oauth.user_id.user_id'))
 
     summary_id = Column(String, primary_key = True)
-    
+    calendar_date = Column(Date)    
+
     start_time = Column(DateTime)
     start_time_offset = Column(INTERVAL)
     duration = Column(INTERVAL)

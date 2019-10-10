@@ -294,17 +294,17 @@ def recieve_moveiq():
 
 @bp.route('/pulseOx', methods=['POST'])
 def recieve_pulseox():
-    print("\n\n *****\nPulseOx Hit\n*****\n\n")
-    with open('podump', 'w') as f:
-        json.dump(request.get_json(),f)
-
     pulse_ox_summaries = request.get_json()['pulseox']
     with session_scope() as session:
         for summary in pulse_ox_summaries:
             pulse_ox_summary = pulse_ox.Pulse_Ox(
                 pulse_ox_uid = summary.get('userId'),
                 summary_id = summary.get('summaryId'),
-
+                
+                calendar_date = dateutil.parser.parse(
+                    summary.get('calendarDate')).date() if 
+                    summary.get('calendarDate') is not None else None,
+               
                 start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('offsetInSeconds')),
                 duration = to_interval(summary.get('durationInSeconds')),

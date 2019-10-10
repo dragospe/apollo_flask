@@ -70,6 +70,7 @@ ACTIVITY_TYPE_ENUM =  Enum('UNCATEGORIZED',
 	'STAND_UP_PADDLEBOARDING',
 	'WHITEWATER_RAFTING_KAYAKING',
 	'WIND_KITE_SURFING', 
+        'UNMONITORED',
         name='Activity_Type',
         schema='garmin_wellness')
 

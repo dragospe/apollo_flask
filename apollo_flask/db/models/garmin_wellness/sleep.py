@@ -13,7 +13,7 @@ class Sleep_Summary(Base):
 
     summary_id = Column(String, primary_key = True)
     
-    calendar_date = Column(DateTime)
+    calendar_date = Column(Date)
 
     start_time = Column(DateTime)
     start_time_offset = Column(INTERVAL)

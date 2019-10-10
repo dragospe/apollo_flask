@@ -16,7 +16,7 @@ class Stress_Details(Base):
     start_time_offset = Column(INTERVAL)
 
     duration = Column(INTERVAL)
-    calendar_date = Column(DateTime)
+    calendar_date = Column(Date)
     
     stress_level_values_map = Column(JSON)
     body_battery_values_map = Column(JSON)
