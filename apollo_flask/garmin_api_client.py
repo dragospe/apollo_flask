@@ -22,9 +22,8 @@ def recieve_dailies():
             daily = daily_summary.Daily_Summary(
                 daily_summary_uid = summary.get('userId'),
                 summary_id = summary.get('summaryId'),
-                calendar_date = dateutil.parser.parse(
-                    summary.get('calendarDate')).date() if 
-                    summary.get('calendarDate') is not None else None,
+                calendar_date = get_calendar_date(summary),
+
                 start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
                 duration = to_interval(summary.get('durationInSeconds')),
@@ -156,6 +155,17 @@ def recieve_epochs():
 
 @bp.route('/sleeps', methods=['POST'])
 def recieve_sleeps():
+    """For other data ingestion endpoints, there is a simple way to determine
+    whether or not incoming data should create a new database record or update
+    an existing one. For sleep data, this is not the case. The "validation" 
+    of the JSON response gives some indication as to how "up-to-date" the data
+    is, but is subject to change; further, the "AUTO_FINAL" and
+    "ENHANCED_FINAL" validation types, which are meant to indicate that no 
+    further changes to the data are expected, are not guaranteed to be sent.
+
+    After emailing Garmin support, it appears that the current best way to
+    update sleep data is to take the most recent response recieved.
+    """
     sleeps = request.get_json()['sleeps']
     with session_scope() as session:
         for summary in sleeps:
@@ -164,6 +174,7 @@ def recieve_sleeps():
                 
                 summary_id = summary.get('summaryId'),
                 
+                calendar_date = get_calendar_date(summary),
                 start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
                 
@@ -182,7 +193,11 @@ def recieve_sleeps():
                 sleep_sp02_map = summary.get('timeOffsetSleepSpo2')     
             )                
 
-            update_db_from_api_response(session, sleep.Sleep_Summary, sleep_summary)     
+            db_sleep = session.query(sleep.Sleep_Summary).filter_by(calendar_date = sleep_summary.calendar_date).first()
+            if db_sleep is not None:
+                clone_row(sleep_summary, db_sleep)
+            else:
+                session.add(sleep_summary)
 
     return Response(status = 200)
 
@@ -227,9 +242,7 @@ def recieve_stress_details():
                 duration = to_interval(summary.get('durationInSeconds')),                
 
 
-                calendar_date = dateutil.parser.parse(
-                    summary.get('calendarDate')).date() if 
-                    summary.get('calendarDate') is not None else None,
+                calendar_date = get_calendar_date(summary),
     
                 stress_level_values_map = summary.get('timeOffsetStressLevelValues'),
                 body_battery_values_map = summary.get('timeOffsetBodyBatteryDetails')
@@ -251,9 +264,7 @@ def recieve_user_metrics():
                 user_metrics_uid = summary.get('userId'),
                 summary_id = summary.get('summaryId'),
         
-                calendar_date = dateutil.parser.parse(
-                    summary.get('calendarDate')).date() if 
-                    summary.get('calendarDate') is not None else None,
+                calendar_date = get_calendar_date(summary),
         
                 vo2_max = summary.get('vo2Max'),
                 fitness_age = summary.get('fitnessAge')
@@ -278,9 +289,8 @@ def recieve_moveiq():
                 move_iq_uid = summary.get('userId'),
                 summary_id = summary.get('summaryId'),
                 
-                calendar_date = dateutil.parser.parse(
-                    summary.get('calendarDate')).date() if 
-                    summary.get('calendarDate') is not None else None,
+                calendar_date = get_calendar_date(summary),
+
                 start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('offsetInSeconds')),
                 duration = to_interval(summary.get('durationInSeconds')),
@@ -301,9 +311,7 @@ def recieve_pulseox():
                 pulse_ox_uid = summary.get('userId'),
                 summary_id = summary.get('summaryId'),
                 
-                calendar_date = dateutil.parser.parse(
-                    summary.get('calendarDate')).date() if 
-                    summary.get('calendarDate') is not None else None,
+                calendar_date = get_calendar_date(summary),
                
                 start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('offsetInSeconds')),
@@ -319,6 +327,10 @@ def recieve_pulseox():
     return Response(status = 200)
 
 ################################### Helper Functions ############################
+def get_calendar_date(summary):
+    calendar_date = dateutil.parser.parse(summary.get('calendarDate')) if summary.get('calendarDate') is not None else None
+    return calendar_date
+
 
 def to_interval(x):
     """Helper function to convert the integers returned in the JSON respone to
@@ -336,7 +348,7 @@ def clone_row(from_row, to_row):
         setattr(to_row,k, getattr(from_row,k))
 
 def update_db_from_api_response(session, 
-                                table, 
+                                table_obj, 
                                 incoming_data,
                                 match_attr = 'start_time',
                                 order_attr = 'duration'):
@@ -379,7 +391,7 @@ def update_db_from_api_response(session,
     filter_by_kw = {match_attr : getattr(incoming_data,match_attr)}
 
     #Grab the existing data
-    db_data = session.query(table).filter_by(**filter_by_kw).first()
+    db_data = session.query(table_obj).filter_by(**filter_by_kw).first()
             
     if db_data is not None and \
             getattr(db_data, order_attr) <= getattr(incoming_data, order_attr):

@@ -218,25 +218,25 @@ def test_recieve_epochs(client, app):
         epoch2 =  query.filter_by(summary_id = "sd3114376-5d8cf8f6-6").first()
         assert epoch2.start_time == datetime.fromtimestamp(1569519862)
 
-#def test_recieve_sleep(client, app):
+def test_recieve_sleep(client, app):
     #Add the user
-    #with session_scope() as session: 
-    #    uid = User_Id(user_id = "5c7d25f1-7580-4309-8e36-b00bce768ae5", active = True)
-    #    session.add(uid)
+    with session_scope() as session: 
+        uid = User_Id(user_id = "5c7d25f1-7580-4309-8e36-b00bce768ae5", active = True)
+        session.add(uid)
 
-    #client.post('/api_client/garmin/sleeps',
-    #            data=json.dumps(garmin_api_mega_response),
-    #            content_type = 'application/json')
+    client.post('/api_client/garmin/sleeps',
+                data=json.dumps(garmin_api_mega_response),
+                content_type = 'application/json')
 
-    #with session_scope() as session:
-    #    query = session.query(sleep.Sleep_Summary)
-    #    assert query.count() == 8, "Exactly 8 sleeps were not added."
+    with session_scope() as session:
+        query = session.query(sleep.Sleep_Summary)
+        assert query.count() == 3, "Exactly 3 sleeps were not added."
        
-    #    sleep1 =  query.filter_by(summary_id = "d3114376-5d8d7aaf-9396").first()
-    #    assert sleep1.start_time == datetime.fromtimestamp(1569553071)
+        sleep1 =  query.filter_by(summary_id = "x3114376-5d917208-729c").first()
+        assert sleep1.rem_sleep_duration == to_interval(6780)
         
-    #    sleep2 =  query.filter_by(summary_id = 'x3114376-5d5fb86c-4dd0').first()
-    #    assert sleep2.start_time == datetime.fromtimestamp(1566554220)
+        sleep2 =  query.filter_by(summary_id = 'x3114376-5d5fb86c-4dd0').first()
+        assert sleep2.validation == "AUTO_TENTATIVE"
 
 def test_recieve_body_comps(client, app):
     add_dummy_user()
