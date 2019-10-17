@@ -280,7 +280,7 @@ def test_receive_user_metrics(client, app):
         assert query.count() == 2, "Exactly 2 user metrics summaries were not added."
         
         um1 = query.filter_by(summary_id = "sd3114376-5d961996").first()
-        assert um1.vo2_max == 42
+        assert um1.vo2_max ==50 
 
         um2 = query.filter_by(summary_id = 'sd3114376-5d976b16').first()
         assert um2.fitness_age == 60

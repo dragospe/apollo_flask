@@ -328,7 +328,7 @@ def recieve_pulseox():
 
 ################################### Helper Functions ############################
 def get_calendar_date(summary):
-    calendar_date = dateutil.parser.parse(summary.get('calendarDate')) if summary.get('calendarDate') is not None else None
+    calendar_date = dateutil.parser.parse(summary.get('calendarDate')).date() if summary.get('calendarDate') is not None else None
     return calendar_date
 
 
@@ -385,7 +385,7 @@ def update_db_from_api_response(session,
     sleep summaries) are ordered based on different criteria, and thus we allow
     some flexibility in the arguments to this method.
     """
-    
+   
     #We don't know the attribute we're matching on before runtime, so we've got 
     # to throw it in a dictionary and unpack when we hit our query.
     filter_by_kw = {match_attr : getattr(incoming_data,match_attr)}
