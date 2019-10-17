@@ -297,7 +297,14 @@
   "userAccessToken": "f49f259b-a71b-4a28-a90b-fe7f0e1c7190",
   "vo2Max" : 55.0,
   "fitnessAge" : 60
-} ],
+},{"summaryId" : "sd3114376-5d961996",
+  "userId": "5c7d25f1-7580-4309-8e36-b00bce768ae5",
+  "calendarDate" : "2019-10-03",
+  "userAccessToken": "f49f259b-a71b-4a28-a90b-fe7f0e1c7190",
+  "vo2Max" : 50.0,
+  "fitnessAge" : 100
+}
+ ],
 "moveIQActivities": [{
   "summaryId" : "sd3114376-5d961996Running2d",
   "userId": "5c7d25f1-7580-4309-8e36-b00bce768ae5",
