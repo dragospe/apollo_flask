@@ -2,7 +2,10 @@ from setuptools import find_packages, setup
 
 setup(
     name = 'apollo_flask',
-    version = '0.0.1',
+    version = '0.1.0',
+    author = "Peter Dragos",
+    author_email = "pdragos@u.rochester.edu",
+    description = "Webapp portion of the Apollo-AF project.",
     packages = find_packages(),
     include_package_data = True,
     zip_safe = False,
@@ -10,6 +13,8 @@ setup(
         'flask',
         'sqlalchemy',
         'rauth',
-        'requests'
+        'requests',
+        'pytest'
     ],
+    classifiers = ["Programming Language :: Python :: 3"],
 )
