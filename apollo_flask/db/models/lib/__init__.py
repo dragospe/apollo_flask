@@ -3,7 +3,7 @@ import sqlalchemy
 from sqlalchemy import (Column, Integer, Float, String, Enum, DateTime, Date,
     ForeignKey, CheckConstraint, Boolean, UniqueConstraint)
 
-from sqlalchemy.dialects.postgresql import INTERVAL, JSON
+from sqlalchemy.dialects.postgresql import INTERVAL
 
 from sqlalchemy.types import JSON
 
