@@ -21,10 +21,8 @@ def recieve_dailies():
         for summary in dailies:
             daily = daily_summary.Daily_Summary(
                 daily_summary_uid = summary.get('userId'),
-                summary_id = summary.get('summaryId'),
-                calendar_date = get_calendar_date(summary),
 
-                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
+                start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
                 duration = to_interval(summary.get('durationInSeconds')),
                 steps = summary.get('steps'),
@@ -75,8 +73,7 @@ def recieve_activities():
         for summary in activities:
             activity_summary = activity.Activity_Summary(
                 activity_uid = summary.get('userId'),
-                summary_id = summary.get('summaryId'),
-                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
+                start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
                 duration = to_interval(summary.get('durationInSeconds')),
                 
@@ -129,9 +126,7 @@ def recieve_epochs():
             epoch_summary = epoch.Epoch_Summary(
                 epoch_uid = summary.get('userId'),
                 
-                summary_id = summary.get('summaryId'),
-                
-                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
+                start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
                 
                 activity_type = summary.get('activityType'),
@@ -172,10 +167,7 @@ def recieve_sleeps():
             sleep_summary = sleep.Sleep_Summary(
                 sleep_uid = summary.get('userId'),
                 
-                summary_id = summary.get('summaryId'),
-                
-                calendar_date = get_calendar_date(summary),
-                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
+                start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
                 
                 duration = to_interval(summary.get('durationInSeconds')),
@@ -190,10 +182,10 @@ def recieve_sleeps():
                 sleep_levels_map = summary.get('sleepLevelsMap'),
                 validation = summary.get('validation'),
             
-                sleep_sp02_map = summary.get('timeOffsetSleepSpo2')     
+                sleep_spo2_map = summary.get('timeOffsetSleepSpo2')     
             )                
 
-            db_sleep = session.query(sleep.Sleep_Summary).filter_by(calendar_date = sleep_summary.calendar_date).first()
+            db_sleep = session.query(sleep.Sleep_Summary).filter_by(start_time_utc = sleep_summary.start_time_utc).one_or_none()
             if db_sleep is not None:
                 clone_row(sleep_summary, db_sleep)
             else:
@@ -207,11 +199,9 @@ def recieve_body_comp():
     with session_scope() as session:
         for summary in body_comps:
             bc = body_comp.Body_Composition(
-                body_composition_uid = summary.get('UserId'),
+                body_composition_uid = summary.get('userId'),
 
-                summary_id = summary.get('summaryId'),
-
-                measurement_time = datetime.fromtimestamp(summary.get('measurementTimeInSeconds')),
+                measurement_time_utc = datetime.fromtimestamp(summary.get('measurementTimeInSeconds')),
                 measurement_time_offset = to_interval(summary.get('measurementTimeOffsetInSeconds')),
 
                 muscle_mass = summary.get('muscleMassInGrams'),
@@ -224,7 +214,7 @@ def recieve_body_comp():
                 weight = summary.get('weightInGrams')
             )
             
-            update_db_from_api_response(session, body_comp.Body_Composition, bc, match_attr= 'measurement_time', order_attr = 'measurement_time')
+            update_db_from_api_response(session, body_comp.Body_Composition, bc, match_attr= 'measurement_time_utc', order_attr = 'measurement_time_utc')
 
     return Response(status = 200)
 
@@ -235,14 +225,10 @@ def recieve_stress_details():
         for summary in stress_details:
             stress_summary = stress.Stress_Details(
                 stress_details_uid = summary.get('UserId'),
-                summary_id = summary.get('summaryId'),
                 
-                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
+                start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
                 duration = to_interval(summary.get('durationInSeconds')),                
-
-
-                calendar_date = get_calendar_date(summary),
     
                 stress_level_values_map = summary.get('timeOffsetStressLevelValues'),
                 body_battery_values_map = summary.get('timeOffsetBodyBatteryDetails')
@@ -262,7 +248,6 @@ def recieve_user_metrics():
         for summary in user_metrics_summaries:
             metric_summary = user_metrics.User_Metrics(
                 user_metrics_uid = summary.get('userId'),
-                summary_id = summary.get('summaryId'),
         
                 calendar_date = get_calendar_date(summary),
         
@@ -278,20 +263,15 @@ def recieve_user_metrics():
 
 @bp.route('/moveiq', methods=['POST'])
 def recieve_moveiq():
-    with open('json_dump', 'w') as f:
-        json.dump(request.get_json(),f)
 
     move_iq_summaries = request.get_json()['moveIQActivities']
     with session_scope() as session:
         for summary in move_iq_summaries:
             move_iq_summary = move_iq.Move_Iq(
-                
                 move_iq_uid = summary.get('userId'),
-                summary_id = summary.get('summaryId'),
                 
-                calendar_date = get_calendar_date(summary),
 
-                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
+                start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('offsetInSeconds')),
                 duration = to_interval(summary.get('durationInSeconds')),
     
@@ -309,11 +289,8 @@ def recieve_pulseox():
         for summary in pulse_ox_summaries:
             pulse_ox_summary = pulse_ox.Pulse_Ox(
                 pulse_ox_uid = summary.get('userId'),
-                summary_id = summary.get('summaryId'),
                 
-                calendar_date = get_calendar_date(summary),
-               
-                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
+                start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('offsetInSeconds')),
                 duration = to_interval(summary.get('durationInSeconds')),
                 
@@ -350,7 +327,7 @@ def clone_row(from_row, to_row):
 def update_db_from_api_response(session, 
                                 table_obj, 
                                 incoming_data,
-                                match_attr = 'start_time',
+                                match_attr = 'start_time_utc',
                                 order_attr = 'duration'):
     """[Parameters:]
 
@@ -391,7 +368,7 @@ def update_db_from_api_response(session,
     filter_by_kw = {match_attr : getattr(incoming_data,match_attr)}
 
     #Grab the existing data
-    db_data = session.query(table_obj).filter_by(**filter_by_kw).first()
+    db_data = session.query(table_obj).filter_by(**filter_by_kw).one_or_none()
             
     if db_data is not None and \
             getattr(db_data, order_attr) <= getattr(incoming_data, order_attr):

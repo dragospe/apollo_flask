@@ -10,11 +10,8 @@ class Epoch_Summary(Base):
     __tablename__ = 'epoch_summary'
     __table_args__ = {'schema':'garmin_wellness'}
 
-    epoch_uid = Column(String, ForeignKey('garmin_oauth.user_id.user_id'))
-
-    summary_id = Column(String, primary_key = True)
-    
-    start_time = Column(DateTime)
+    epoch_uid = Column(String, ForeignKey('garmin_oauth.user_id.user_id'), primary_key = True)
+    start_time_utc = Column(DateTime, primary_key = True)
     start_time_offset = Column(INTERVAL)
 
     duration = Column(INTERVAL)

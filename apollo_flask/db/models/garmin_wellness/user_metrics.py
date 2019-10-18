@@ -7,10 +7,9 @@ class User_Metrics(Base):
     __tablename__ = 'user_metrics'
     __table_args__ = {'schema': 'garmin_wellness'}
 
-    user_metrics_uid = Column(String, ForeignKey('garmin_oauth.user_id.user_id'))
-    summary_id = Column(String, primary_key = True)
+    user_metrics_uid = Column(String, ForeignKey('garmin_oauth.user_id.user_id'), primary_key = True)
 
-    calendar_date = Column(Date)
+    calendar_date = Column(Date, primary_key = True)
 
     vo2_max = Column(Float)
     fitness_age = Column(Integer)

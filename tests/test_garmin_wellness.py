@@ -154,168 +154,140 @@ def test_update_db_from_api_response(app):
 #
 #Feel free to approach with a better strategy.
 
+def test_recieve_activities(client):
+    with open('tests/garmin_api_responses/activities.json', 'r') as f:
+         data = json.load(f)
 
+    activities = data['activities']
 
-#Load a big ball of JSON so that we can test out recieving 
-#   data from garmin."""
-with open('tests/garmin_api_mega_response_data', 'rb') as f:
-        garmin_api_mega_response = json.load(f)
+    add_uids(activities)
 
-
-def test_recieve_dailies(client,app):
-    add_dummy_user()
-
-    #Send the data
-    client.post('/api_client/garmin/dailies', 
-                data = json.dumps(garmin_api_mega_response),
-                content_type='application/json')
-
-    #Ensure the data got put in:
-    #TODO: Test on more attributes? This might be a PITA the way I did it.
-    with session_scope() as session:
-        query = session.query(daily_summary.Daily_Summary)
-        assert query.count() == 2, "Exactly two dailies were not added."
-       
-        summary1 =  query.filter_by(summary_id = "sd3114376-5d8cd915-15180-6").first()
-        assert summary1.start_time == datetime.fromtimestamp(1569511701)
-        
-        summary2 =  query.filter_by(summary_id = "sd3114376-5d8e2a95-ef-6").first()
-        assert summary2.start_time == datetime.fromtimestamp(1569598101)
-    
-def test_recieve_activities(client, app):
-    add_dummy_user() 
-
-    client.post('/api_client/garmin/activities', 
-                data = json.dumps(garmin_api_mega_response),
+    client.post('/api_client/garmin/activities',
+                data= json.dumps(data),
                 content_type = 'application/json')
 
-    #Ensure the data got put in:
-    #TODO: Test on more attributes? This might be a PITA the way I did it.
-    with session_scope() as session:
-        query = session.query(activity.Activity_Summary)
-        assert query.count() == 2, "Exactly 2 activities  were not added."
-       
-        activity1 =  query.filter_by(summary_id = "13931969").first()
-        assert activity1.start_time == datetime.fromtimestamp(1568829554)
-        
-        summary2 =  query.filter_by(summary_id = "14279282").first()
-        assert summary2.start_time == datetime.fromtimestamp(1568915954)
 
-def test_recieve_epochs(client, app):
-    add_dummy_user()
+def test_recieve_body_comps(client):
+    with open('tests/garmin_api_responses/body_comps.json', 'r') as f:
+         data = json.load(f)
+
+    body_comps = data['bodyComps']
+
+    add_uids(body_comps)
+
+    client.post('/api_client/garmin/bodyComps',
+                data= json.dumps(data),
+                content_type = 'application/json')
+
+
+def test_recieve_dailies(client):
+    with open('tests/garmin_api_responses/dailies.json', 'r') as f:
+         data = json.load(f)
+
+    dailies = data['dailies']
+
+    add_uids(dailies)
+
+    client.post('/api_client/garmin/dailies',
+                data= json.dumps(data),
+                content_type = 'application/json')
+
+def test_recieve_epochs(client):
+    with open('tests/garmin_api_responses/epochs.json', 'r') as f:
+         data = json.load(f)
+
+    epochs = data['epochs']
+
+    add_uids(epochs)
 
     client.post('/api_client/garmin/epochs',
-                data=json.dumps(garmin_api_mega_response),
+                data= json.dumps(data),
                 content_type = 'application/json')
 
-    with session_scope() as session:
-        query = session.query(epoch.Epoch_Summary)
-        assert query.count() >= 1, "No epochs were added."
-       
-        epoch1 =  query.filter_by(summary_id = "sd3114376-5d8d0382-8").first()
-        assert epoch1.start_time == datetime.fromtimestamp( 1569522562)
-        
-        epoch2 =  query.filter_by(summary_id = "sd3114376-5d8cf8f6-6").first()
-        assert epoch2.start_time == datetime.fromtimestamp(1569519862)
 
-def test_recieve_sleep(client, app):
-    #Add the user
-    with session_scope() as session: 
-        uid = User_Id(user_id = "5c7d25f1-7580-4309-8e36-b00bce768ae5", active = True)
-        session.add(uid)
+def test_recieve_move_iq(client):
+    with open('tests/garmin_api_responses/moveiq.json', 'r') as f:
+         data = json.load(f)
+
+    moveiq = data['moveIQActivities']
+
+    add_uids(moveiq)
+
+    client.post('/api_client/garmin/moveiq',
+                data= json.dumps(data),
+                content_type = 'application/json')
+
+
+def test_recieve_pulse_ox(client):
+    with open('tests/garmin_api_responses/pulse_ox.json', 'r') as f:
+         data = json.load(f)
+
+    pulseox = data['pulseox']
+
+    add_uids(pulseox)
+
+    client.post('/api_client/garmin/pulseOx',
+                data= json.dumps(data),
+                content_type = 'application/json')
+
+
+def test_recieve_sleep(client):
+    with open('tests/garmin_api_responses/sleeps.json', 'r') as f:
+         data = json.load(f)
+
+    sleeps = data['sleeps']
+
+    add_uids(sleeps)
 
     client.post('/api_client/garmin/sleeps',
-                data=json.dumps(garmin_api_mega_response),
+                data= json.dumps(data),
                 content_type = 'application/json')
 
-    with session_scope() as session:
-        query = session.query(sleep.Sleep_Summary)
-        assert query.count() == 3, "Exactly 3 sleeps were not added."
-       
-        sleep1 =  query.filter_by(summary_id = "x3114376-5d917208-729c").first()
-        assert sleep1.rem_sleep_duration == to_interval(6780)
-        
-        sleep2 =  query.filter_by(summary_id = 'x3114376-5d5fb86c-4dd0').first()
-        assert sleep2.validation == "AUTO_TENTATIVE"
 
-def test_recieve_body_comps(client, app):
-    add_dummy_user()
-    client.post('/api_client/garmin/bodyComps',
-                data=json.dumps(garmin_api_mega_response),
+def test_recieve_stress(client):
+    with open('tests/garmin_api_responses/stress_details.json', 'r') as f:
+         data = json.load(f)
+
+    stress_details = data['stressDetails']
+
+    add_uids(stress_details)
+
+    client.post('/api_client/garmin/StressDetails',
+                data= json.dumps(data),
                 content_type = 'application/json')
 
-    with session_scope() as session:
-        query = session.query(body_comp.Body_Composition)
-        assert query.count() == 1, "Exactly 1 body comp was not added."
-       
-        bc1 =  query.filter_by(summary_id = "x3114376-5d9754d4").first()
-        assert bc1.weight == 90718
-        
 
-def test_recieve_stress(client, app):
-    add_dummy_user()
+def test_recieve_user_metrics(client):
+    with open('tests/garmin_api_responses/user_metrics_summaries.json', 'r') as f:
+         data = json.load(f)
 
-    client.post('/api_client/garmin/stressDetails',
-                data=json.dumps(garmin_api_mega_response),
+    user_metrics = data['userMetrics']
+
+    add_uids(user_metrics)
+
+    client.post('/api_client/garmin/UserMetrics',
+                data= json.dumps(data),
                 content_type = 'application/json')
-    
+
+
+
+
+
+############## Helpers ################
+def add_uids(json_data):
+    """Adds uids so the FK check passes in test_recieve_* tests."""
     with session_scope() as session:
-        query = session.query(stress.Stress_Details)
-        assert query.count() == 2, "Exactly 2 stress details were not added."
-        
-        stress1 = query.filter_by(summary_id = "sd3114376-5d961996-232").first()
-        assert stress1.start_time == datetime.fromtimestamp(1570118038)
+        for summary in json_data:
+            new_uid = User_Id(user_id = summary['userId'], 
+                                active=True)
+            #Check if UID exists in the db already
+            db_uid = session.query(User_Id).filter_by(
+                    user_id = new_uid.user_id).one_or_none()
 
-        stress2 = query.filter_by(start_time = datetime.fromtimestamp(1570204438)).first()
-        assert stress2.stress_level_values_map['141'] == 30
-
-def test_receive_user_metrics(client, app):
-    add_dummy_user()
-    client.post('/api_client/garmin/userMetrics',
-            data=json.dumps(garmin_api_mega_response),
-            content_type = 'application/json')
-    
-    with session_scope() as session:
-        query = session.query(user_metrics.User_Metrics)
-        assert query.count() == 2, "Exactly 2 user metrics summaries were not added."
-        
-        um1 = query.filter_by(summary_id = "sd3114376-5d961996").first()
-        assert um1.vo2_max ==50 
-
-        um2 = query.filter_by(summary_id = 'sd3114376-5d976b16').first()
-        assert um2.fitness_age == 60
-
-def test_receive_move_iq(client, app):
-    add_dummy_user()
-    client.post('/api_client/garmin/moveiq',
-            data=json.dumps(garmin_api_mega_response),
-            content_type = 'application/json')
-    
-    with session_scope() as session:
-        query = session.query(move_iq.Move_Iq)
-        assert query.count() == 2, "Exactly 2 move iq summaries were not added."
-       
-        miq1 = query.filter_by(summary_id = 'sd3114376-5d961996Running2d').first()
-        assert miq1.activity_type == "Running"
-
-def test_receive_pulse_ox(client, app):
-    add_dummy_user()
-    client.post('/api_client/garmin/pulseOx',
-            data=json.dumps(garmin_api_mega_response),
-            content_type = 'application/json')
-
-    with session_scope() as session:
-        query = session.query(pulse_ox.Pulse_Ox)
-        assert query.count() == 2, "Exactly 2 pulse ox measurements were not added."
-        
-        po1 = query.filter_by(summary_id = 'sd3114376-5d976b16').first()
-        assert po1.spo2_value_map['0']==100
-
-
-#### Helpers ####
-def add_dummy_user():
-    with session_scope() as session: 
-        uid = User_Id(user_id = "5c7d25f1-7580-4309-8e36-b00bce768ae5", active = True)
-        session.add(uid)
+            #Make sure its active if so
+            if db_uid is not None:
+                db_uid.active=True
+            else: #Add it if not.
+                session.add(new_uid)
 
 

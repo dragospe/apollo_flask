@@ -8,15 +8,12 @@ class Stress_Details(Base):
     __tablename__ = 'stress_details'
     __table_args__ = {'schema':'garmin_wellness'}
     
-    stress_details_uid = Column(String, ForeignKey('garmin_oauth.user_id.user_id'))
+    stress_details_uid = Column(String, ForeignKey('garmin_oauth.user_id.user_id'), primary_key = True)
     
-    summary_id = Column(String, primary_key = True)
-    
-    start_time = Column(DateTime)
+    start_time = Column(DateTime, primary_key = True)
     start_time_offset = Column(INTERVAL)
 
     duration = Column(INTERVAL)
-    calendar_date = Column(Date)
     
     stress_level_values_map = Column(JSON)
     body_battery_values_map = Column(JSON)
