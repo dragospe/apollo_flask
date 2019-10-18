@@ -10,14 +10,9 @@ class Body_Composition(Base):
     __tablename__ = 'body_composition'
     __table_args__ = {'schema':'garmin_wellness'}
 
-    body_composition_uid = Column(String, ForeignKey('garmin_oauth.user_id.user_id'))
+    body_composition_uid = Column(String, ForeignKey('garmin_oauth.user_id.user_id'), primary_key = True)
 
-    summary_id = Column(String, primary_key = True)
-
-    #Time in seconds when the measurement was taken
-    measurement_time = Column(DateTime) 
-
-    #Time offset in seconds to derive 'local' time of the measuring device
+    measurement_time_utc = Column(DateTime, primary_key = True) 
     measurement_time_offset = Column(INTERVAL)
 
     muscle_mass = Column(Integer)

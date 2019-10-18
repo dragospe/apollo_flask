@@ -9,13 +9,9 @@ class Sleep_Summary(Base):
     __tablename__ = 'sleep_summary'
     __table_args__ = {'schema':'garmin_wellness'}
 
-    sleep_uid = Column(String, ForeignKey('garmin_oauth.user_id.user_id'))
+    sleep_uid = Column(String, ForeignKey('garmin_oauth.user_id.user_id'), primary_key = True)
 
-    summary_id = Column(String, primary_key = True)
-    
-    calendar_date = Column(Date)
-
-    start_time = Column(DateTime)
+    start_time_utc = Column(DateTime, primary_key = True)
     start_time_offset = Column(INTERVAL)
 
     duration = Column(INTERVAL)
@@ -30,4 +26,4 @@ class Sleep_Summary(Base):
 
     validation = Column(SLEEP_VALIDATION_ENUM)
 
-    sleep_sp02_map = Column(JSON)
+    sleep_spo2_map = Column(JSON)
