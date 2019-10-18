@@ -226,7 +226,6 @@ def test_recieve_pulse_ox(client):
 
     add_uids(pulseox)
 
-        #POST the data
     client.post('/api_client/garmin/pulseOx',
                 data= json.dumps(data),
                 content_type = 'application/json')
