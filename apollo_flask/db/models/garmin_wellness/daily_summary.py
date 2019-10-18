@@ -9,12 +9,11 @@ class Daily_Summary(Base):
     __tablename__ = 'daily_summary'
     __table_args__ = {'schema':'garmin_wellness'}
 
-    daily_summary_uid = Column(String, ForeignKey('garmin_oauth.user_id.user_id'))
+    daily_summary_uid = Column(String, ForeignKey('garmin_oauth.user_id.user_id'), primary_key = True)
 
-    summary_id = Column(String, primary_key = True)
-    calendar_date = Column(Date)
-    start_time = Column(DateTime)
+    start_time_utc = Column(DateTime, primary_key = True)
     start_time_offset = Column(INTERVAL)
+
     duration = Column(INTERVAL)
     steps = Column(Integer)
     distance = Column(Float)

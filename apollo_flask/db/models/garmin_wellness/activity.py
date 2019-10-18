@@ -9,11 +9,9 @@ class Activity_Summary(Base):
     __tablename__ = 'activity_summary'
     __table_args__ = {'schema':'garmin_wellness'}
 
-    activity_uid = Column(String, ForeignKey('garmin_oauth.user_id.user_id'))
-
-    summary_id = Column(String, primary_key = True)
+    activity_uid = Column(String, ForeignKey('garmin_oauth.user_id.user_id'), primary_key=True)
     
-    start_time = Column(DateTime)
+    start_time_utc = Column(DateTime, primary_key = True)
     start_time_offset = Column(INTERVAL)
 
     duration = Column(INTERVAL)
