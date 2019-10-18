@@ -185,7 +185,7 @@ def recieve_sleeps():
                 sleep_spo2_map = summary.get('timeOffsetSleepSpo2')     
             )                
 
-            db_sleep = session.query(sleep.Sleep_Summary).filter_by(calendar_date = sleep_summary.calendar_date).first()
+            db_sleep = session.query(sleep.Sleep_Summary).filter_by(start_time_utc = sleep_summary.start_time_utc).one_or_none()
             if db_sleep is not None:
                 clone_row(sleep_summary, db_sleep)
             else:
@@ -199,7 +199,7 @@ def recieve_body_comp():
     with session_scope() as session:
         for summary in body_comps:
             bc = body_comp.Body_Composition(
-                body_composition_uid = summary.get('UserId'),
+                body_composition_uid = summary.get('userId'),
 
                 measurement_time_utc = datetime.fromtimestamp(summary.get('measurementTimeInSeconds')),
                 measurement_time_offset = to_interval(summary.get('measurementTimeOffsetInSeconds')),
@@ -214,7 +214,7 @@ def recieve_body_comp():
                 weight = summary.get('weightInGrams')
             )
             
-            update_db_from_api_response(session, body_comp.Body_Composition, bc, match_attr= 'measurement_time', order_attr = 'measurement_time')
+            update_db_from_api_response(session, body_comp.Body_Composition, bc, match_attr= 'measurement_time_utc', order_attr = 'measurement_time_utc')
 
     return Response(status = 200)
 
@@ -263,8 +263,6 @@ def recieve_user_metrics():
 
 @bp.route('/moveiq', methods=['POST'])
 def recieve_moveiq():
-    with open('json_dump', 'w') as f:
-        json.dump(request.get_json(),f)
 
     move_iq_summaries = request.get_json()['moveIQActivities']
     with session_scope() as session:
@@ -329,7 +327,7 @@ def clone_row(from_row, to_row):
 def update_db_from_api_response(session, 
                                 table_obj, 
                                 incoming_data,
-                                match_attr = 'start_time',
+                                match_attr = 'start_time_utc',
                                 order_attr = 'duration'):
     """[Parameters:]
 
@@ -370,7 +368,7 @@ def update_db_from_api_response(session,
     filter_by_kw = {match_attr : getattr(incoming_data,match_attr)}
 
     #Grab the existing data
-    db_data = session.query(table_obj).filter_by(**filter_by_kw).first()
+    db_data = session.query(table_obj).filter_by(**filter_by_kw).one_or_none()
             
     if db_data is not None and \
             getattr(db_data, order_attr) <= getattr(incoming_data, order_attr):

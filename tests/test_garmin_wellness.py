@@ -154,13 +154,141 @@ def test_update_db_from_api_response(app):
 #
 #Feel free to approach with a better strategy.
 
+def test_recieve_activities(client):
+    with open('tests/garmin_api_responses/activities.json', 'r') as f:
+         data = json.load(f)
+
+    activities = data['activities']
+
+    add_uids(activities)
+
+    client.post('/api_client/garmin/activities',
+                data= json.dumps(data),
+                content_type = 'application/json')
+
+
+def test_recieve_body_comps(client):
+    with open('tests/garmin_api_responses/body_comps.json', 'r') as f:
+         data = json.load(f)
+
+    body_comps = data['bodyComps']
+
+    add_uids(body_comps)
+
+    client.post('/api_client/garmin/bodyComps',
+                data= json.dumps(data),
+                content_type = 'application/json')
+
+
+def test_recieve_dailies(client):
+    with open('tests/garmin_api_responses/dailies.json', 'r') as f:
+         data = json.load(f)
+
+    dailies = data['dailies']
+
+    add_uids(dailies)
+
+    client.post('/api_client/garmin/dailies',
+                data= json.dumps(data),
+                content_type = 'application/json')
+
+def test_recieve_epochs(client):
+    with open('tests/garmin_api_responses/epochs.json', 'r') as f:
+         data = json.load(f)
+
+    epochs = data['epochs']
+
+    add_uids(epochs)
+
+    client.post('/api_client/garmin/epochs',
+                data= json.dumps(data),
+                content_type = 'application/json')
+
+
+def test_recieve_move_iq(client):
+    with open('tests/garmin_api_responses/moveiq.json', 'r') as f:
+         data = json.load(f)
+
+    moveiq = data['moveIQActivities']
+
+    add_uids(moveiq)
+
+    client.post('/api_client/garmin/moveiq',
+                data= json.dumps(data),
+                content_type = 'application/json')
+
+
+def test_recieve_pulse_ox(client):
+    with open('tests/garmin_api_responses/pulse_ox.json', 'r') as f:
+         data = json.load(f)
+
+    pulseox = data['pulseox']
+
+    add_uids(pulseox)
+
+        #POST the data
+    client.post('/api_client/garmin/pulseOx',
+                data= json.dumps(data),
+                content_type = 'application/json')
+
+
+def test_recieve_sleep(client):
+    with open('tests/garmin_api_responses/sleeps.json', 'r') as f:
+         data = json.load(f)
+
+    sleeps = data['sleeps']
+
+    add_uids(sleeps)
+
+    client.post('/api_client/garmin/sleeps',
+                data= json.dumps(data),
+                content_type = 'application/json')
+
+
+def test_recieve_stress(client):
+    with open('tests/garmin_api_responses/stress_details.json', 'r') as f:
+         data = json.load(f)
+
+    stress_details = data['stressDetails']
+
+    add_uids(stress_details)
+
+    client.post('/api_client/garmin/StressDetails',
+                data= json.dumps(data),
+                content_type = 'application/json')
+
+
+def test_recieve_user_metrics(client):
+    with open('tests/garmin_api_responses/user_metrics_summaries.json', 'r') as f:
+         data = json.load(f)
+
+    user_metrics = data['userMetrics']
+
+    add_uids(user_metrics)
+
+    client.post('/api_client/garmin/UserMetrics',
+                data= json.dumps(data),
+                content_type = 'application/json')
 
 
 
-#### Helpers ####
-def add_dummy_user():
-    with session_scope() as session: 
-        uid = User_Id(user_id = "5c7d25f1-7580-4309-8e36-b00bce768ae5", active = True)
-        session.add(uid)
+
+
+############## Helpers ################
+def add_uids(json_data):
+    """Adds uids so the FK check passes in test_recieve_* tests."""
+    with session_scope() as session:
+        for summary in json_data:
+            new_uid = User_Id(user_id = summary['userId'], 
+                                active=True)
+            #Check if UID exists in the db already
+            db_uid = session.query(User_Id).filter_by(
+                    user_id = new_uid.user_id).one_or_none()
+
+            #Make sure its active if so
+            if db_uid is not None:
+                db_uid.active=True
+            else: #Add it if not.
+                session.add(new_uid)
 
 
