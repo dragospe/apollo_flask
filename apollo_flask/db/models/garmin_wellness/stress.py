@@ -10,7 +10,7 @@ class Stress_Details(Base):
     
     stress_details_uid = Column(String, ForeignKey('garmin_oauth.user_id.user_id'), primary_key = True)
     
-    start_time = Column(DateTime, primary_key = True)
+    start_time_utc = Column(DateTime, primary_key = True)
     start_time_offset = Column(INTERVAL)
 
     duration = Column(INTERVAL)
