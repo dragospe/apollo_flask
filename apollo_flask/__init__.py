@@ -13,10 +13,7 @@ def create_app(test_config = None):
         app.config.from_mapping(test_config)
 
     #ensure instance folder exists
-    try:
-        os.makedirs(app.instance_path)
-    except OSError:
-        pass
+    os.makedirs(app.instance_path, exist_ok=True)
     
     import apollo_flask.db as db
     db.init_app(app)
