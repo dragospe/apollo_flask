@@ -37,27 +37,35 @@ def get_garmin_oauth_service():
 
 ############################### Pages/Functions: ###############################
 
-@bp.route('/consent')
+@bp.route('/consent', methods=('GET','POST'))
 def request_user_access():
-    """OAuth1, Step 1: Obtain a request token from the provider, and direct the 
-    user to the appropriate authorization URL."""
-    
-    service = get_garmin_oauth_service()
-    
-    #Obtain and a request token and request token secret
-    rt_pair = service.get_request_token()
+    """OAuth1, Step 1: Have the user enter a RedCAP subject identifier.
+    Obtain a request token from the provider, and direct the user to the
+    appropriate authorization URL, saving the SID and request token in
+    the database."""
 
-    #Open a database session
-    with session_scope() as session:
-        request_token = Request_Token(
+    if (request.method == 'POST'):
+        sid = request.form['sid']
+        service = get_garmin_oauth_service()
+    
+        #Obtain and a request token and request token secret
+        rt_pair = service.get_request_token()
+
+        #Save the request token
+        with session_scope() as session:
+            request_token = Request_Token(
+                        sid = sid,
                         request_token = rt_pair[0], 
                         request_token_secret = rt_pair[1])     
 
-        session.add(request_token)
+            session.add(request_token)
 
         #Construct the authorization URL
         auth_url = service.get_authorize_url(request_token.request_token)
-    return redirect(auth_url)
+        #Redirect the user to the garmin.com consent page.
+        return redirect(auth_url)
+
+    return render_template('oauth/garmin/consent.html')
 
 @bp.route('/callback')
 def callback():

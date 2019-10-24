@@ -276,6 +276,7 @@ def add_uids(json_data):
         for summary in json_data:
             new_uid = User_Id(user_id = summary['userId'], 
                                 active=True)
+ 
             #Check if UID exists in the db already
             db_uid = session.query(User_Id).filter_by(
                     user_id = new_uid.user_id).one_or_none()
@@ -283,7 +284,12 @@ def add_uids(json_data):
             #Make sure its active if so
             if db_uid is not None:
                 db_uid.active=True
-            else: #Add it if not.
+            else: #Add it and an SID if not.
                 session.add(new_uid)
+                session.commit()
+                subject = Subject(subject_id='Subject' + new_uid.user_id, 
+                                  garmin_uid = new_uid.user_id)
+                session.add(subject)
+            
 
 

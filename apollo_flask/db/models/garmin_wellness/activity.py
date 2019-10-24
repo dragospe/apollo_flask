@@ -1,5 +1,5 @@
 from apollo_flask.db.models.lib import *
-from apollo_flask.db.models.garmin_oauth import User_Id
+import apollo_flask.db.models
 
 class Activity_Summary(Base):
     """Stores the summary data of a given activity. 
@@ -9,7 +9,7 @@ class Activity_Summary(Base):
     __tablename__ = 'activity_summary'
     __table_args__ = {'schema':'garmin_wellness'}
 
-    activity_uid = Column(String, ForeignKey('garmin_oauth.user_id.user_id'), primary_key=True)
+    sid = Column(String, ForeignKey('subject.subject_id'), primary_key=True)
     
     start_time_utc = Column(DateTime, primary_key = True)
     start_time_offset = Column(INTERVAL)

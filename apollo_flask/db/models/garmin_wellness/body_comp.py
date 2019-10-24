@@ -1,5 +1,5 @@
 from apollo_flask.db.models.lib import *
-from apollo_flask.db.models.garmin_oauth import User_Id
+import apollo_flask.db.models
 
 class Body_Composition(Base):
     """Stores body composition data for users.
@@ -10,7 +10,8 @@ class Body_Composition(Base):
     __tablename__ = 'body_composition'
     __table_args__ = {'schema':'garmin_wellness'}
 
-    body_composition_uid = Column(String, ForeignKey('garmin_oauth.user_id.user_id'), primary_key = True)
+    sid = Column(String, ForeignKey('subject.subject_id'),
+         primary_key = True)
 
     measurement_time_utc = Column(DateTime, primary_key = True) 
     measurement_time_offset = Column(INTERVAL)

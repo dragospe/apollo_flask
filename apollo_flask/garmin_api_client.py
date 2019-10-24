@@ -8,6 +8,7 @@ from flask import (
 
 from apollo_flask.db import session_scope
 from apollo_flask.db.models.garmin_wellness import *
+from apollo_flask.db.models import Subject
 from sqlalchemy.inspection import inspect
 
 from datetime import date, datetime, timedelta
@@ -21,7 +22,7 @@ def recieve_dailies():
     with session_scope() as session:
         for summary in dailies:
             daily = daily_summary.Daily_Summary(
-                daily_summary_uid = summary.get('userId'),
+                sid = uid2sid(session,summary.get('userId')),
 
                 start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
@@ -73,7 +74,7 @@ def recieve_activities():
     with session_scope() as session:
         for summary in activities:
             activity_summary = activity.Activity_Summary(
-                activity_uid = summary.get('userId'),
+                sid = uid2sid(session,summary.get('userId')),
                 start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
                 duration = to_interval(summary.get('durationInSeconds')),
@@ -125,7 +126,7 @@ def recieve_epochs():
     with session_scope() as session:
         for summary in epochs:
             epoch_summary = epoch.Epoch_Summary(
-                epoch_uid = summary.get('userId'),
+                sid = uid2sid(session,summary.get('userId')),
                 
                 start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
@@ -166,7 +167,7 @@ def recieve_sleeps():
     with session_scope() as session:
         for summary in sleeps:
             sleep_summary = sleep.Sleep_Summary(
-                sleep_uid = summary.get('userId'),
+                sid = uid2sid(session,summary.get('userId')),
                 
                 start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
@@ -188,7 +189,7 @@ def recieve_sleeps():
 
             db_sleep = session.query(sleep.Sleep_Summary).filter_by(
                         start_time_utc = sleep_summary.start_time_utc,
-                        sleep_uid = sleep_summary.sleep_uid).one_or_none()
+                        sid = sleep_summary.sid).one_or_none()
             if db_sleep is not None:
                 clone_row(sleep_summary, db_sleep)
             else:
@@ -202,7 +203,7 @@ def recieve_body_comp():
     with session_scope() as session:
         for summary in body_comps:
             bc = body_comp.Body_Composition(
-                body_composition_uid = summary.get('userId'),
+                sid = uid2sid(session,summary.get('userId')),
 
                 measurement_time_utc = datetime.fromtimestamp(summary.get('measurementTimeInSeconds')),
                 measurement_time_offset = to_interval(summary.get('measurementTimeOffsetInSeconds')),
@@ -227,7 +228,7 @@ def recieve_stress_details():
     with session_scope() as session:
         for summary in stress_details:
             stress_summary = stress.Stress_Details(
-                stress_details_uid = summary.get('UserId'),
+                sid = uid2sid(session,summary.get('userId')),
                 
                 start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
@@ -249,7 +250,7 @@ def recieve_user_metrics():
     with session_scope() as session:
         for summary in user_metrics_summaries:
             metric_summary = user_metrics.User_Metrics(
-                user_metrics_uid = summary.get('userId'),
+                sid = uid2sid(session,summary.get('userId')),
         
                 calendar_date = get_calendar_date(summary),
         
@@ -268,8 +269,7 @@ def recieve_moveiq():
     with session_scope() as session:
         for summary in move_iq_summaries:
             move_iq_summary = move_iq.Move_Iq(
-                move_iq_uid = summary.get('userId'),
-                
+                sid = uid2sid(session,summary.get('userId')),
 
                 start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('offsetInSeconds')),
@@ -288,7 +288,7 @@ def recieve_pulseox():
     with session_scope() as session:
         for summary in pulse_ox_summaries:
             pulse_ox_summary = pulse_ox.Pulse_Ox(
-                pulse_ox_uid = summary.get('userId'),
+                sid = uid2sid(session,summary.get('userId')),
                 
                 start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('offsetInSeconds')),
@@ -383,3 +383,11 @@ def update_db_from_api_response(session,
     else:
         #Incoming data did not already exist
         session.add(incoming_data)
+
+def uid2sid(session, uid):
+    """Convert user identifier to subject identifier using an existing
+    session."""
+    subject = session.query(Subject).filter_by(garmin_uid=uid).one_or_none()
+    if (subject == None):
+        return None
+    return subject.subject_id

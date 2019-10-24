@@ -6,8 +6,7 @@ from apollo_flask.db.models import *
 ################################## Classes: ###################################
 
 class User_Id(Base):
-    """Single column tbale that stores garmin user IDs. From the 'Garmin 
-    Wellness REST API Specification':
+    """From the 'Garmin Wellness REST API Specification':
 
         Each Garmin Connect user has a unique Health API ID associated with
         them that will persist across multiple UATs. For instance, if a user
@@ -30,18 +29,10 @@ class User_Id(Base):
     __table_args__ = {'schema':'garmin_oauth'}   
     
     user_id = Column(String, primary_key=True)
+
     #Active unless a user has de-registered
     active = Column(Boolean, nullable=False) 
     access_tokens = relationship('Access_Token')
-    daily_summaries = relationship('Daily_Summary', backref='user')
-    activity_summaries = relationship('Activity_Summary', backref='user')
-    epoch_summaries = relationship('Epoch_Summary', backref='user')
-    sleep_summaries = relationship('Sleep_Summary', backref='user')
-    body_compositions = relationship('Body_Composition', backref='user')
-    stress_details = relationship('Stress_Details', backref='user')
-    user_metrics = relationship('User_Metrics', backref='user')
-    move_iq_summaries = relationship('Move_Iq', backref='user')
-    pulse_ox_summaries = relationship('Pulse_Ox', backref='user')
 
     def __repr__(self):
         return "<Garmin_User_ID(user_id = '%s', access_tokens = '%s', active = '%s')>"\
