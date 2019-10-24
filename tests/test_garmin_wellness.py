@@ -69,8 +69,7 @@ def test_update_db_from_api_response(app):
         session.expunge(db_row)
         
         #Now update it with recent data
-        update_db_from_api_response(session, Dummy_Table, recent_row, 
-                match_attr = "pk_attr", order_attr = "attr4")
+        update_db_from_api_response(session, recent_row, "attr4")
         
         query = session.query(Dummy_Table).filter_by(pk_attr = "123")
         
@@ -81,8 +80,7 @@ def test_update_db_from_api_response(app):
             " did not succeed in updating attr1."
         
         #Make sure stale rows don't overwrite recent rows
-        update_db_from_api_response(session, Dummy_Table, stale_row,
-                match_attr = "pk_attr", order_attr = "attr4")
+        update_db_from_api_response(session, stale_row, "attr4")
 
         #Only one result should have been returned    
         assert query.count() == 1, "Anti-Update from recent_row to stale_row added"\
@@ -92,8 +90,7 @@ def test_update_db_from_api_response(app):
             "changed attr1 when it shouldn't have."
          
         #Make sure new rows are added appropriately.
-        update_db_from_api_response(session, Dummy_Table, new_row, match_attr = "pk_attr",
-                order_attr = "attr4")
+        update_db_from_api_response(session,  new_row, "attr4")
 
         query = session.query(Dummy_Table).filter_by(pk_attr = "456")
         
@@ -125,16 +122,15 @@ def test_update_db_from_api_response(app):
                 attr3 = False, attr4 = to_interval(50))
             new_row = Dummy_Table(pk_attr = "456", attr1 = "new attr1")
 
+
+
+            ###Randomized testing from here out.
             row_list = [new_row, db_row, recent_row, stale_row]
 
             random.shuffle(row_list)
             
             for row in row_list:
-                update_db_from_api_response(session, 
-                                Dummy_Table, 
-                                row, 
-                                match_attr = "pk_attr",
-                                order_attr = "attr4")
+                update_db_from_api_response(session, row, "attr4")
 
             assert session.query(Dummy_Table).count() == 2, "More than two rows added when only two should have been."
             assert session.query(Dummy_Table).filter_by(pk_attr = "456").first().attr1 == "new attr1"

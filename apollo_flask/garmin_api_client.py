@@ -8,6 +8,7 @@ from flask import (
 
 from apollo_flask.db import session_scope
 from apollo_flask.db.models.garmin_wellness import *
+from sqlalchemy.inspection import inspect
 
 from datetime import date, datetime, timedelta
 import dateutil.parser
@@ -59,7 +60,7 @@ def recieve_dailies():
                 intensity_duration_goal = to_interval(summary.get('intensityDurationGoal')),
                 floors_climbed_goal = summary.get('floorsClimbedGoal'))
             
-            update_db_from_api_response(session, daily_summary.Daily_Summary, daily)
+            update_db_from_api_response(session, daily, 'duration')
 
     return Response(status=200)
 
@@ -114,7 +115,7 @@ def recieve_activities():
                 #parent_summary_id = ???
                 
                 manually_entered = summary.get('manual'))
-            update_db_from_api_response(session, activity.Activity_Summary, activity_summary)     
+            update_db_from_api_response(session, activity_summary, 'duration')     
             
     return Response(status = 200)
 
@@ -145,7 +146,7 @@ def recieve_epochs():
                 mean_motion_intensity = summary.get('meanMotionIntensity'),
                 max_motion_intensity = summary.get('maxMotionIntensity'))
 
-            update_db_from_api_response(session, epoch.Epoch_Summary, epoch_summary)     
+            update_db_from_api_response(session, epoch_summary, 'duration')     
     return Response(status = 200)
 
 @bp.route('/sleeps', methods=['POST'])
@@ -185,7 +186,9 @@ def recieve_sleeps():
                 sleep_spo2_map = summary.get('timeOffsetSleepSpo2')     
             )                
 
-            db_sleep = session.query(sleep.Sleep_Summary).filter_by(start_time_utc = sleep_summary.start_time_utc).one_or_none()
+            db_sleep = session.query(sleep.Sleep_Summary).filter_by(
+                        start_time_utc = sleep_summary.start_time_utc,
+                        sleep_uid = sleep_summary.sleep_uid).one_or_none()
             if db_sleep is not None:
                 clone_row(sleep_summary, db_sleep)
             else:
@@ -214,7 +217,7 @@ def recieve_body_comp():
                 weight = summary.get('weightInGrams')
             )
             
-            update_db_from_api_response(session, body_comp.Body_Composition, bc, match_attr= 'measurement_time_utc', order_attr = 'measurement_time_utc')
+            update_db_from_api_response(session,  bc, order_attr = 'measurement_time_utc')
 
     return Response(status = 200)
 
@@ -234,8 +237,7 @@ def recieve_stress_details():
                 body_battery_values_map = summary.get('timeOffsetBodyBatteryDetails')
             )
 
-            update_db_from_api_response(session, stress.Stress_Details, stress_summary,
-                    match_attr='start_time', order_attr = 'duration')
+            update_db_from_api_response(session, stress_summary, 'duration')
 
     
     return Response(status = 200)
@@ -255,9 +257,7 @@ def recieve_user_metrics():
                 fitness_age = summary.get('fitnessAge')
             )
             
-            update_db_from_api_response(session, user_metrics.User_Metrics,
-                 metric_summary, match_attr = 'calendar_date',
-                 order_attr = 'calendar_date')
+            update_db_from_api_response(session, metric_summary, 'calendar_date')
 
     return Response(status = 200)
 
@@ -278,7 +278,7 @@ def recieve_moveiq():
                 activity_type = summary.get('activityType'),
                 activity_subtype = summary.get('activitySubType')
             )
-            update_db_from_api_response(session, move_iq.Move_Iq, move_iq_summary, order_attr = 'duration')
+            update_db_from_api_response(session, move_iq_summary, 'duration')
                 
     return Response(status = 200)
 
@@ -299,7 +299,7 @@ def recieve_pulseox():
                 on_demand = summary.get('OnDemand')
             )
     
-            update_db_from_api_response(session, pulse_ox.Pulse_Ox, pulse_ox_summary)
+            update_db_from_api_response(session, pulse_ox_summary, 'duration')
     
     return Response(status = 200)
 
@@ -325,10 +325,8 @@ def clone_row(from_row, to_row):
         setattr(to_row,k, getattr(from_row,k))
 
 def update_db_from_api_response(session, 
-                                table_obj, 
                                 incoming_data,
-                                match_attr = 'start_time_utc',
-                                order_attr = 'duration'):
+                                order_attr):
     """[Parameters:]
 
         * session: Uses the session that is passed in (so another does
@@ -336,8 +334,6 @@ def update_db_from_api_response(session,
         * table: The table in which we should look to find existing data
         * json_resp: The JSON response object that we are querying to determine if
             an update must occur.
-        * match_attr (default: 'start_time'): The attribute we should use 
-            to match the incoming data with existing data.
         * order_attr (default: 'duration'): The attribute that denotes which
             database object is more recent. If obj_1.order_attr < obj_2.order_attr,
             then obj_2 is considered more recent.
@@ -349,6 +345,8 @@ def update_db_from_api_response(session,
     helper function should be used to streamline deciding whether or not the data
     that is present in the database matches any incoming data, and if so, whether
     the incoming data or the existing data is more recent, and updating as necessary.
+    It dynamically pulls the primary key for the passed in data and matches based on
+    the attribute given in `order_attr`.
     
     In particular, section 6.1 of the Wellness REST API Specification states:
 
@@ -362,13 +360,17 @@ def update_db_from_api_response(session,
     sleep summaries) are ordered based on different criteria, and thus we allow
     some flexibility in the arguments to this method.
     """
-   
-    #We don't know the attribute we're matching on before runtime, so we've got 
-    # to throw it in a dictionary and unpack when we hit our query.
-    filter_by_kw = {match_attr : getattr(incoming_data,match_attr)}
+
+    #Pack primary keys into a dictionary to be unpacked as kwargs
+    pk_dict = {}
+    for pk in inspect(incoming_data).class_.__mapper__.primary_key:
+        pk_dict[pk.name] = getattr(incoming_data,pk.name)
+    
+    #Grab class object
+    class_obj = inspect(incoming_data).class_.__mapper__ 
 
     #Grab the existing data
-    db_data = session.query(table_obj).filter_by(**filter_by_kw).one_or_none()
+    db_data = session.query(class_obj).filter_by(**pk_dict).one_or_none()
             
     if db_data is not None and \
             getattr(db_data, order_attr) <= getattr(incoming_data, order_attr):
