@@ -42,7 +42,6 @@ def recieve_dailies():
                 avg_heart_rate = summary.get('averageHeartRateInBeatsPerMinute'),
                 max_heart_rate = summary.get('maxHeartRateInBeatsPerMinute'),
                 resting_heart_rate = summary.get('restingHeartRateInBeatsPerMinute'),
-                time_offset_heart_rate_samples = summary.get('timeOffsetHeartRateSamples'),
                 average_stress = summary.get('averageStressLevel'),
                 max_stress = summary.get('maxStressLevel'),
                 stress_duration = to_interval(summary.get('stressDurationInSeconds')),
@@ -61,7 +60,8 @@ def recieve_dailies():
                 intensity_duration_goal = to_interval(summary.get('intensityDurationGoal')),
                 floors_climbed_goal = summary.get('floorsClimbedGoal'))
             
-            update_db_from_api_response(session, daily, 'duration')
+            update_db_from_api_response(session, daily, 'duration', 
+                    time_offset_dict = {heart_rate_samples_time_offset.Heart_Rate_Samples_Time_Offset: summary.get('timeOffsetHeartRateSamples')})
 
     return Response(status=200)
 
@@ -181,20 +181,13 @@ def recieve_sleeps():
                 rem_sleep_duration = to_interval(summary.get('remSleepInSeconds')),
                 awake_duration = to_interval(summary.get('awakeDurationInSeconds')),
                 
-                sleep_levels_map = summary.get('sleepLevelsMap'),
                 validation = summary.get('validation'),
             
-                sleep_spo2_map = summary.get('timeOffsetSleepSpo2')     
             )                
 
-            db_sleep = session.query(sleep.Sleep_Summary).filter_by(
-                        start_time_utc = sleep_summary.start_time_utc,
-                        sid = sleep_summary.sid).one_or_none()
-            if db_sleep is not None:
-                clone_row(sleep_summary, db_sleep)
-            else:
-                session.add(sleep_summary)
-
+            #TODO: implement sleep levels time offset mapping.
+            update_db_from_api_response(session, sleep_summary, 'duration')
+           
     return Response(status = 200)
 
 @bp.route('/bodyComps', methods=['POST'])
@@ -233,12 +226,12 @@ def recieve_stress_details():
                 start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
                 duration = to_interval(summary.get('durationInSeconds')),                
-    
-                stress_level_values_map = summary.get('timeOffsetStressLevelValues'),
-                body_battery_values_map = summary.get('timeOffsetBodyBatteryDetails')
-            )
-
-            update_db_from_api_response(session, stress_summary, 'duration')
+                )
+            update_db_from_api_response(session, stress_summary, 'duration',
+                    time_offset_dict = {body_battery_time_offset.Body_Battery_Time_Offset:
+                                        summary.get('timeOffsetBodyBatteryValues'),
+                                        stress_time_offset.Stress_Time_Offset:
+                                        summary.get('timeOffsetStressLevelValues')})
 
     
     return Response(status = 200)
@@ -293,13 +286,12 @@ def recieve_pulseox():
                 start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
                 start_time_offset = to_interval(summary.get('offsetInSeconds')),
                 duration = to_interval(summary.get('durationInSeconds')),
-                
-                spo2_value_map = summary.get('timeOffsetSpo2Values'),
-            
+           
                 on_demand = summary.get('OnDemand')
             )
     
-            update_db_from_api_response(session, pulse_ox_summary, 'duration')
+            update_db_from_api_response(session, pulse_ox_summary, 'duration',
+                 time_offset_dict = {pulse_ox_time_offset.Pulse_Ox_Time_Offset : summary.get("timeOffsetSpo2Values")})
     
     return Response(status = 200)
 
@@ -326,7 +318,8 @@ def clone_row(from_row, to_row):
 
 def update_db_from_api_response(session, 
                                 incoming_data,
-                                order_attr):
+                                order_attr,
+                                time_offset_dict = None):
     """[Parameters:]
 
         * session: Uses the session that is passed in (so another does
@@ -337,6 +330,11 @@ def update_db_from_api_response(session,
         * order_attr (default: 'duration'): The attribute that denotes which
             database object is more recent. If obj_1.order_attr < obj_2.order_attr,
             then obj_2 is considered more recent.
+        * time_offset_dict: A dictionary containing a time offset Table and a time offset 
+            value map, e.g. 
+                {Pulse_Ox_Time_Offset}: { 0 : 94, 5 : 90, 10: 95}}
+            Only necessary if the incoming data needs to be split into one or more
+            time series tables.
 
     [Background:] 
 
@@ -360,12 +358,18 @@ def update_db_from_api_response(session,
     sleep summaries) are ordered based on different criteria, and thus we allow
     some flexibility in the arguments to this method.
     """
+    
 
     #Pack primary keys into a dictionary to be unpacked as kwargs
     pk_dict = {}
     for pk in inspect(incoming_data).class_.__mapper__.primary_key:
         pk_dict[pk.name] = getattr(incoming_data,pk.name)
     
+    #Since the ID's are auto incremented, they aren't generated until an
+    #object is added to the database. We remove them from pk_dict here
+    #so that they don't cause an issue with filtering our query.
+    pk_dict.pop('id', None)    
+
     #Grab class object
     class_obj = inspect(incoming_data).class_.__mapper__ 
 
@@ -375,14 +379,30 @@ def update_db_from_api_response(session,
     if db_data is not None and \
             getattr(db_data, order_attr) <= getattr(incoming_data, order_attr):
         #The data already existed in the database, but the incoming data is more recent.
+        #We copy the id from the database, overwrite the db_data, and then copy it's id 
+        #back.
+        db_id =  getattr(db_data,'id', None)
         clone_row(incoming_data, db_data)
+        if db_id is not None:
+            db_data.id=db_id
+        session.commit()
+        #Check if this is a time-offset-type summary, and update the time-offset data if so
+        if time_offset_dict is not None:
+            #Delete existing data
+            delete_time_offsets_from_db(session, time_offset_dict, db_id)
+            #Add new data
+            add_time_offsets_to_db(session, time_offset_dict, db_id)
     elif db_data is not None and \
             getattr(db_data, order_attr) > getattr(incoming_data, order_attr):
         #Existing data does not need to be updated
         pass
     else:
-        #Incoming data did not already exist
-        session.add(incoming_data)
+        #Incoming data did not already exist. Add it
+        session.add(incoming_data)      
+        session.commit()
+        if time_offset_dict is not None:
+            add_time_offsets_to_db(session, time_offset_dict, incoming_data.id)        
+
 
 def uid2sid(session, uid):
     """Convert user identifier to subject identifier using an existing
@@ -391,3 +411,27 @@ def uid2sid(session, uid):
     if (subject == None):
         return None
     return subject.subject_id
+
+
+def add_time_offsets_to_db(session, time_offset_dict, fk_id):
+    for Table in time_offset_dict:
+        if time_offset_dict[Table] is None:
+                #Since we are using .get instead of string indexing on our api
+                #responses, time_offset_dict can contain None values. This just
+                #means we didn't recieve data for that time period. Skip it and move on.
+            continue
+        for time_offset in time_offset_dict[Table]:
+            time_offset_entry = Table(id = fk_id,
+                                            time_offset = time_offset,
+                                            value = time_offset_dict[Table][time_offset])
+            session.add(time_offset_entry)
+
+
+def delete_time_offsets_from_db(session, time_offset_dict, fk_id):
+    for Table in time_offset_dict:
+        if time_offset_dict[Table] is None:
+                #Since we are using .get instead of string indexing on our api
+                #responses, time_offset_dict can contain None values. This just
+                #means we didn't recieve data for that time period. Skip it and move on.
+            continue
+        session.query(Table).filter_by(id =fk_id).delete()

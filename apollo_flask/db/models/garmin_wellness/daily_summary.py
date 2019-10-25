@@ -7,11 +7,15 @@ class Daily_Summary(Base):
     Distances are given in meters.
     """
     __tablename__ = 'daily_summary'
-    __table_args__ = {'schema':'garmin_wellness'}
+    __table_args__ = (UniqueConstraint('sid', 'start_time_utc'),
+                UniqueConstraint('id'),
+                {'schema':'garmin_wellness'})
 
-    sid = Column(String, ForeignKey('subject.subject_id'), primary_key = True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
 
-    start_time_utc = Column(DateTime, primary_key = True)
+    sid = Column(String, ForeignKey('subject.subject_id'), primary_key=True)
+
+    start_time_utc = Column(DateTime, primary_key=True)
     start_time_offset = Column(INTERVAL)
 
     duration = Column(INTERVAL)
@@ -28,7 +32,6 @@ class Daily_Summary(Base):
     avg_heart_rate = Column(Integer)
     max_heart_rate = Column(Integer)
     resting_heart_rate = Column(Integer)
-    time_offset_heart_rate_samples = Column(JSON)
     average_stress = Column(Integer)
     max_stress = Column(Integer)
     stress_duration = Column(INTERVAL)

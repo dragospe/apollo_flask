@@ -248,10 +248,9 @@ def test_recieve_stress(client):
 
     add_uids(stress_details)
 
-    client.post('/api_client/garmin/StressDetails',
+    client.post('/api_client/garmin/stressDetails',
                 data= json.dumps(data),
                 content_type = 'application/json')
-
 
 def test_recieve_user_metrics(client):
     with open('tests/garmin_api_responses/user_metrics_summaries.json', 'r') as f:
