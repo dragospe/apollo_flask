@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<div text-align=center>
+    {%if sid_already_associated %}
+        Error: the subject ID "{{ sid_already_associated }}" is already 
+        associated with a different Gamin Connect account.
+    {% endif %}
+    {% if uid_already_associated_with_sid %}
+        Error: this Garmin Connect account is already associated with 
+        subject ID "{{ uid_already_associated_with_sid }}".
+    {% endif %}
+    {% if sid_success %}
+        You have successfully authorized us to obtain the Garmin data associated
+        with subject ID "{{ sid_success }}".
+    {% endif %}
+</div>
+{% endblock %}
+    

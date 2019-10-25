@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, render_template
 
 def create_app(test_config = None):
     #Second argument ensures configuration is loaded from the instance folder
@@ -17,6 +17,10 @@ def create_app(test_config = None):
     
     import apollo_flask.db as db
     db.init_app(app)
+
+    @app.route('/')
+    def homepage():
+        return render_template('index.html')
     
     from . import garmin_oauth
     app.register_blueprint(garmin_oauth.bp) 

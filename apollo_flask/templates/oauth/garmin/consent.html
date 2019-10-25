@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+    <h2> Enter a subject ID to consent them for Garmin Connect. </h2>
+
+{% if sid_already_registered %}
+<div text-align = center size=24pt> Error: Subject ID "{{ sid_already_registered }}" is already registered. </div>
+{% endif %}
+
+<div class=logos>
+<form method="post">
+    <label for="sid">Subject ID</label>
+    <input name="sid" id="sid" required>
+    <input type="submit" value="Consent">
+</form>
+</div>
+{% endblock %}

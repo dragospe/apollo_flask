@@ -16,6 +16,7 @@ from sqlalchemy.exc import IntegrityError
 
 # The classes for the database objects
 from apollo_flask.db.models.garmin_oauth import *
+from apollo_flask.db.models import Subject
 # Session, engine, and db helper functions
 from apollo_flask.db import engine, session_scope
 
@@ -46,13 +47,19 @@ def request_user_access():
 
     if (request.method == 'POST'):
         sid = request.form['sid']
-        service = get_garmin_oauth_service()
-    
-        #Obtain and a request token and request token secret
-        rt_pair = service.get_request_token()
+               
+        with session_scope() as session:        
+            db_sid = session.query(Subject).filter_by(subject_id = sid).one_or_none()
+            if db_sid is not None:
+                return render_template('oauth/garmin/consent.html', sid_already_registered = sid)
 
-        #Save the request token
-        with session_scope() as session:
+
+            service = get_garmin_oauth_service()
+    
+            #Obtain and a request token and request token secret
+            rt_pair = service.get_request_token()
+
+            #Save the request token
             request_token = Request_Token(
                         sid = sid,
                         request_token = rt_pair[0], 
@@ -60,8 +67,8 @@ def request_user_access():
 
             session.add(request_token)
 
-        #Construct the authorization URL
-        auth_url = service.get_authorize_url(request_token.request_token)
+            #Construct the authorization URL
+            auth_url = service.get_authorize_url(request_token.request_token)
         #Redirect the user to the garmin.com consent page.
         return redirect(auth_url)
 
@@ -86,27 +93,14 @@ def callback():
     #Open a database session
     with session_scope() as session:
         #Match the request token from the request token secret.
-        request_token_obj = session.query(Request_Token).filter_by(
-            request_token=request_token).all()
-
-        #Make sure only one secret was found; if not, respond 500. If so,
-        #select it.
-        try:
-            if len(request_token_obj) > 1:
-                raise Exception('There should only be one secret associated with\
-                    the request token, but {} were found.'.format(
-                    len(request_token_obj)))
-        except:
-            #TODO: double check this
-            return Response(status= 500, response= '500 error:' + sys.exc_info())
-        request_token_obj = request_token_obj[0]
-        request_token_secret = request_token_obj.request_token_secret
+        rt = session.query(Request_Token).filter_by(
+            request_token=request_token).one_or_none()
 
         #Obtain the access token
         try:
             at_pair = service.get_access_token(
                 request_token,
-                request_token_secret,
+                rt.request_token_secret,
                 params={'oauth_verifier':oauth_verifier})
         except:
             return Response(status=500, response='500 error: Could not obtain access token')        
@@ -114,13 +108,30 @@ def callback():
         #Every access token is associated with a user id. Fetch it:
         #Retry the request if it's failed; the garmin DB needs a second to update
         uid = User_Id(user_id = get_user_id(at_pair[0], at_pair[1]), active=True)
-        #Check if the UID exists in the database
-        db_uid = session.query(User_Id).filter_by(user_id= uid.user_id).first()
-        if db_uid is not None:
-            session.add(db_uid)
+
+        #Check if the UID or an associated SID exists in the database. If not, add them.
+        db_uid = session.query(User_Id).filter_by(user_id= uid.user_id).one_or_none()
+        db_sid = session.query(Subject).filter_by(subject_id = rt.sid).one_or_none()
+        db_subject_uid = session.query(Subject).filter_by(garmin_uid = uid.user_id).one_or_none()
+
+        #Check if the SID from the db is already associated with a different garmin UID
+        if db_sid is not None and db_sid.garmin_uid != uid.user_id:
+            return Response(status = 409, response = render_template('oauth/garmin/callback.html',
+                     sid_already_associated=rt.sid))
+        #Check if the garmin account in question is already associated with a different SID
+        elif db_sid is None and db_subject_uid is not None:
+            return Response(status = 409, response = render_template('oauth/garmin/callback.html',
+                    uid_already_associated_with_sid = db_subject_uid))
+        #If the garmin account exists, but is inactive, make it active
+        elif db_uid is not None:
             db_uid.active=True 
-        else:
+        #If the garmin UID does not exist in the database, add it.
+        elif db_uid is None:
             session.add(uid)
+        #If the SID does not exist in the database, add it.
+        if db_sid is None:
+            subject = Subject(subject_id = rt.sid, garmin_uid = uid.user_id)
+            session.add(subject)
 
         #Save the access token/uid pair, checking if it exists first
         at = Access_Token(access_token=at_pair[0],
@@ -133,13 +144,14 @@ def callback():
             db_at.access_token_secret = at.access_token_secret
         else:
             session.add(at)
-
+ 
         #We don't need the request token any more:
-        session.delete(request_token_obj)
+        sid = rt.sid
+        session.delete(rt)
+       
 
-        #TODO: Make these responses better. Probably add error handling
-        return Response(status = 202,
-               response = "You have successfully authorized us to monitor your Garmin data.")
+    return Response(status = 202,
+               response = render_template('oauth/garmin/callback.html', sid_success=sid))
 
 @bp.route('/deregistration', methods=['POST'])
 def deregister_user():

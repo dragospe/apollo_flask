@@ -44,6 +44,7 @@ class Request_Token(Base):
     __tablename__ = 'request_token'
     __table_args__ = {'schema': 'garmin_oauth'}
 
+    sid = Column(String, nullable=False)
     request_token = Column(String, primary_key=True)
     request_token_secret = Column(String, nullable=False)
     
