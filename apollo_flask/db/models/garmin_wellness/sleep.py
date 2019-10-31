@@ -11,7 +11,7 @@ class Sleep_Summary(Base):
             {'schema':'garmin_wellness'})
 
     id = Column(Integer, primary_key = True, autoincrement=True)
-    sid = Column(String, ForeignKey('subject.subject_id'), primay_key=True)
+    sid = Column(String, ForeignKey('subject.subject_id'), primary_key=True)
 
     start_time_utc = Column(DateTime, primary_key=True)
     start_time_offset = Column(INTERVAL)

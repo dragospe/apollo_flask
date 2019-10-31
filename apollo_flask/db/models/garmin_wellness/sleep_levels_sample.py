@@ -9,5 +9,5 @@ class Sleep_Levels_Time_Offset(Base):
 
     id = Column(Integer, ForeignKey('garmin_wellness.sleep_summary.id'), primary_key=True)
     
-    time_offset = Column(INTERVAL, primary_key = True)
+    time_local = Column(INTERVAL, primary_key = True)
     value = Column(Integer)

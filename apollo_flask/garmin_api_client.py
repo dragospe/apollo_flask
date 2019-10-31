@@ -61,7 +61,7 @@ def recieve_dailies():
                 floors_climbed_goal = summary.get('floorsClimbedGoal'))
             
             update_db_from_api_response(session, daily, 'duration', 
-                    time_offset_dict = {heart_rate_samples_time_offset.Heart_Rate_Samples_Time_Offset: summary.get('timeOffsetHeartRateSamples')})
+                    time_offset_dict = {heart_rate_sample.Heart_Rate_Sample: summary.get('timeOffsetHeartRateSamples')})
 
     return Response(status=200)
 
@@ -228,9 +228,9 @@ def recieve_stress_details():
                 duration = to_interval(summary.get('durationInSeconds')),                
                 )
             update_db_from_api_response(session, stress_summary, 'duration',
-                    time_offset_dict = {body_battery_time_offset.Body_Battery_Time_Offset:
+                    time_offset_dict = {body_battery_sample.Body_Battery_Sample:
                                         summary.get('timeOffsetBodyBatteryValues'),
-                                        stress_time_offset.Stress_Time_Offset:
+                                        stress_sample.Stress_Sample:
                                         summary.get('timeOffsetStressLevelValues')})
 
     
@@ -284,14 +284,14 @@ def recieve_pulseox():
                 sid = uid2sid(session,summary.get('userId')),
                 
                 start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
-                start_time_offset = to_interval(summary.get('offsetInSeconds')),
+                start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
                 duration = to_interval(summary.get('durationInSeconds')),
            
                 on_demand = summary.get('OnDemand')
             )
     
             update_db_from_api_response(session, pulse_ox_summary, 'duration',
-                 time_offset_dict = {pulse_ox_time_offset.Pulse_Ox_Time_Offset : summary.get("timeOffsetSpo2Values")})
+                 time_offset_dict = {pulse_ox_sample.Pulse_Ox_Sample : summary.get("timeOffsetSpo2Values")})
     
     return Response(status = 200)
 
@@ -391,7 +391,9 @@ def update_db_from_api_response(session,
             #Delete existing data
             delete_time_offsets_from_db(session, time_offset_dict, db_id)
             #Add new data
-            add_time_offsets_to_db(session, time_offset_dict, db_id)
+            add_time_offsets_to_db(session, time_offset_dict, 
+                    incoming_data.start_time_utc + incoming_data.start_time_offset,
+                    db_id)
     elif db_data is not None and \
             getattr(db_data, order_attr) > getattr(incoming_data, order_attr):
         #Existing data does not need to be updated
@@ -401,7 +403,9 @@ def update_db_from_api_response(session,
         session.add(incoming_data)      
         session.commit()
         if time_offset_dict is not None:
-            add_time_offsets_to_db(session, time_offset_dict, incoming_data.id)        
+            add_time_offsets_to_db(session, time_offset_dict, 
+                incoming_data.start_time_utc + incoming_data.start_time_offset,
+                incoming_data.id)        
 
 
 def uid2sid(session, uid):
@@ -413,7 +417,7 @@ def uid2sid(session, uid):
     return subject.subject_id
 
 
-def add_time_offsets_to_db(session, time_offset_dict, fk_id):
+def add_time_offsets_to_db(session, time_offset_dict, start_time_local, fk_id):
     for Table in time_offset_dict:
         if time_offset_dict[Table] is None:
                 #Since we are using .get instead of string indexing on our api
@@ -422,7 +426,7 @@ def add_time_offsets_to_db(session, time_offset_dict, fk_id):
             continue
         for time_offset in time_offset_dict[Table]:
             time_offset_entry = Table(id = fk_id,
-                                            time_offset = time_offset,
+                                            time_local = timedelta(int(time_offset)) + start_time_local,
                                             value = time_offset_dict[Table][time_offset])
             session.add(time_offset_entry)
 
