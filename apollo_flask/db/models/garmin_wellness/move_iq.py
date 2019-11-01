@@ -16,8 +16,7 @@ class Move_Iq(Base):
 
     sid = Column(String, ForeignKey('subject.subject_id'), primary_key = True)
 
-    start_time_utc = Column(DateTime, primary_key = True)
-    start_time_offset = Column(INTERVAL)
+    start_time = Column(DateTime, primary_key = True)
 
     duration = Column(INTERVAL)
     

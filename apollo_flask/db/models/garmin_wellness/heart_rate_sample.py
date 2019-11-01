@@ -6,8 +6,8 @@ class Heart_Rate_Sample(Base):
     __tablename__ = 'heart_rate_sample'
     __table_args__ = {'schema':'garmin_wellness'}
 
-    id = Column(Integer, ForeignKey('garmin_wellness.daily_summary.id'), primary_key = True)
+    sid = Column(String, ForeignKey('subject.subject_id'), primary_key=True)
 
-    time_local = Column(DateTime, primary_key = True)
+    time = Column(DateTime, primary_key = True)
     value = Column(Integer)
 

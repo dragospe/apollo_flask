@@ -13,14 +13,13 @@ class Body_Composition(Base):
     sid = Column(String, ForeignKey('subject.subject_id'),
          primary_key = True)
 
-    measurement_time_utc = Column(DateTime, primary_key = True) 
-    measurement_time_offset = Column(INTERVAL)
+    measurement_time = Column(DateTime, primary_key = True) 
 
-    muscle_mass = Column(Integer)
-    bone_mass = Column(Integer)
+    muscle_mass_grams = Column(Integer)
+    bone_mass_grams = Column(Integer)
     
     body_water_percentage = Column(Float)
     body_fat_percentage = Column(Float)
     body_mass_index = Column(Float)
     
-    weight = Column(Integer)
+    weight_grams = Column(Integer)

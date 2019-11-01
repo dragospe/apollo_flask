@@ -8,8 +8,7 @@ class Stress_Sample(Base):
     __tablename__ = 'stress_sample'
     __table_args__ = {'schema':'garmin_wellness'}
     
-    id = Column(Integer, ForeignKey('garmin_wellness.stress_details.id'), primary_key = True)
-    
-    time_local = Column(DateTime, primary_key = True)
+    sid = Column(String, ForeignKey('subject.subject_id'), primary_key=True) 
+    time = Column(DateTime, primary_key = True)
     value = Column(Integer)
     

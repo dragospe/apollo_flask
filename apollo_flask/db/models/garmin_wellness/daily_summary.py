@@ -7,33 +7,34 @@ class Daily_Summary(Base):
     Distances are given in meters.
     """
     __tablename__ = 'daily_summary'
-    __table_args__ = (UniqueConstraint('sid', 'start_time_utc'),
-                UniqueConstraint('id'),
-                {'schema':'garmin_wellness'})
+    __table_args__ = ({'schema':'garmin_wellness'})
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
 
     sid = Column(String, ForeignKey('subject.subject_id'), primary_key=True)
 
-    start_time_utc = Column(DateTime, primary_key=True)
-    start_time_offset = Column(INTERVAL)
+    start_time = Column(DateTime, primary_key=True)
 
     duration = Column(INTERVAL)
     steps = Column(Integer)
-    distance = Column(Float)
+    distance_meters = Column(Float)
     active_time = Column(INTERVAL)
+
     active_kcal = Column(Integer)
     bmr_kcal = Column(Integer)
     consumed_cal = Column(Integer)
-    moderate_intensity_duration = Column(INTERVAL)
-    vigorous_intensity_duration = Column(INTERVAL)
+
+    moderate_intensity_duration = Column(INTERVAL) #in seconds from garmin
+    vigorous_intensity_duration = Column(INTERVAL) 
+
     floors_climbed = Column(Integer)
+
     min_heart_rate = Column(Integer)
     avg_heart_rate = Column(Integer)
     max_heart_rate = Column(Integer)
     resting_heart_rate = Column(Integer)
-    average_stress = Column(Integer)
-    max_stress = Column(Integer)
+
+    average_stress_level = Column(Integer)
+    max_stress_level = Column(Integer)
     stress_duration = Column(INTERVAL)
     rest_stress_duration = Column(INTERVAL)
     activity_stress_duration = Column(INTERVAL)
@@ -41,6 +42,7 @@ class Daily_Summary(Base):
     medium_stress_duration = Column(INTERVAL)
     high_stress_duration = Column(INTERVAL)
     stress_qualifier = Column(STRESS_QUALIFIER_ENUM)
+
     steps_goal = Column(Integer)
     net_kcal_goal = Column(Integer)
     intensity_duration_goal = Column(INTERVAL)

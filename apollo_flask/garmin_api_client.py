@@ -6,10 +6,12 @@ from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for, Response
 )
 
-from apollo_flask.db import session_scope
+from apollo_flask.db import session_scope, engine
 from apollo_flask.db.models.garmin_wellness import *
 from apollo_flask.db.models import Subject
 from sqlalchemy.inspection import inspect
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.sql import text
 
 from datetime import date, datetime, timedelta
 import dateutil.parser
@@ -24,26 +26,32 @@ def recieve_dailies():
             daily = daily_summary.Daily_Summary(
                 sid = uid2sid(session,summary.get('userId')),
 
-                start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
-                start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
+                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds') +
+                         summary.get('startTimeOffsetInSeconds')),
+
                 duration = to_interval(summary.get('durationInSeconds')),
                 steps = summary.get('steps'),
-                distance = summary.get('distanceInMeters'),
+                distance_meters = summary.get('distanceInMeters'),
                 active_time = to_interval(summary.get('activeTimeInSeconds')),
+
                 active_kcal = summary.get('activeKilocalories'),
                 bmr_kcal = summary.get('bmrKilocalories'),
                 consumed_cal = summary.get('consumedCalories'),
+
                 moderate_intensity_duration = to_interval(
                         summary.get('moderateIntensityDurationInSeconds')),
                 vigorous_intensity_duration = to_interval(
                         summary.get('vigorousIntensityDurationInSeconds')),
+          
                 floors_climbed = summary.get('floorsClimbed'),
+           
                 min_heart_rate = summary.get('minHeartRateInBeatsPerMinute'),
                 avg_heart_rate = summary.get('averageHeartRateInBeatsPerMinute'),
                 max_heart_rate = summary.get('maxHeartRateInBeatsPerMinute'),
                 resting_heart_rate = summary.get('restingHeartRateInBeatsPerMinute'),
-                average_stress = summary.get('averageStressLevel'),
-                max_stress = summary.get('maxStressLevel'),
+            
+                average_stress_level = summary.get('averageStressLevel'),
+                max_stress_level = summary.get('maxStressLevel'),
                 stress_duration = to_interval(summary.get('stressDurationInSeconds')),
                 rest_stress_duration = to_interval(summary.get('restStressDurationInSeconds')),
                 activity_stress_duration = to_interval(
@@ -55,13 +63,16 @@ def recieve_dailies():
                 high_stress_duration = to_interval(
                         summary.get('highStressDurationInSeconds')),
                 stress_qualifier = summary.get('stressQualifier'),
+                
                 steps_goal = summary.get('stepsGoal') ,
                 net_kcal_goal = summary.get('netKilocaloriesGoal'),
                 intensity_duration_goal = to_interval(summary.get('intensityDurationGoal')),
                 floors_climbed_goal = summary.get('floorsClimbedGoal'))
             
-            update_db_from_api_response(session, daily, 'duration', 
-                    time_offset_dict = {heart_rate_sample.Heart_Rate_Sample: summary.get('timeOffsetHeartRateSamples')})
+            update_db_from_api_response(session, daily)
+            if summary.get('timeOffsetHeartRateSamples') != {}:
+                upsert_time_value_map(engine, summary.get('timeOffsetHeartRateSamples'),
+                    daily.start_time, daily.sid, heart_rate_sample.Heart_Rate_Sample)
 
     return Response(status=200)
 
@@ -75,26 +86,33 @@ def recieve_activities():
         for summary in activities:
             activity_summary = activity.Activity_Summary(
                 sid = uid2sid(session,summary.get('userId')),
-                start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
-                start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
+
+                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds') +
+                         summary.get('startTimeOffsetInSeconds')),
+
                 duration = to_interval(summary.get('durationInSeconds')),
                 
-                avg_bike_cadence = summary.get('averageBikeCadenceInRoundsPerMinute'),
-                max_bike_cadence = summary.get('maxBikeCadenceInRoundsPerMinute'),
+                avg_bike_cadence_rounds_per_minute = summary.get(
+                            'averageBikeCadenceInRoundsPerMinute'),
+                max_bike_cadence_rounds_per_minute = summary.get(
+                            'maxBikeCadenceInRoundsPerMinute'),
                 
                 avg_heart_rate = summary.get('averageHeartRateInBeatsPerMinute'),
                 max_heart_rate = summary.get('maxHeartRateInBeatsPerMinute'),
             
-                avg_run_cadence = summary.get('averageRunCadenceInStepsPerMinute'),
-                max_run_cadence = summary.get('maxRunCadenceInStepsPerMinute'),
+                avg_run_cadence_steps_per_minute = summary.get(
+                        'averageRunCadenceInStepsPerMinute'),
+                max_run_cadence_steps_per_minute = summary.get(
+                        'maxRunCadenceInStepsPerMinute'),
 
-                avg_speed = summary.get('averageSpeedInMetersPerSecond'),
-                max_speed = summary.get('maxSpeedInMetersPerSecond'),
+                avg_speed_meters_per_second = summary.get('averageSpeedInMetersPerSecond'),
+                max_speed_meters_per_second = summary.get('maxSpeedInMetersPerSecond'),
 
-                avg_swim_cadence = summary.get('averageSwimCadenceInStrokesPerMinute'),
+                avg_swim_cadence_strokes_per_minute = summary.get(
+                        'averageSwimCadenceInStrokesPerMinute'),
 
-                avg_pace = summary.get('averagePaceInMinutesPerKilometer'),
-                max_pace = summary.get('maxPaceInMinutesPerKilometer'),
+                avg_pace_minutes_per_km = summary.get('averagePaceInMinutesPerKilometer'),
+                max_pace_minutes_per_km = summary.get('maxPaceInMinutesPerKilometer'),
             
                 active_kcal = summary.get('activeKilocalories'),
                 
@@ -102,21 +120,21 @@ def recieve_activities():
         
                 steps = summary.get('steps'),
                 
-                distance = summary.get('distanceInMeters'),
+                distance_meters = summary.get('distanceInMeters'),
         
                 number_of_active_lengths = summary.get('numberOfActiveLengths'),
                 
-                starting_latitude = summary.get('startingLatitudeInDegree'),
-                starting_longitude = summary.get('startingLongitudeInDegree'),
+                starting_latitude_degrees = summary.get('startingLatitudeInDegree'),
+                starting_longitude_degrees = summary.get('startingLongitudeInDegree'),
                 
-                elevation_gain = summary.get('totalElevationGainInMeters'), 
-                elevation_loss = summary.get('totalElevationLossInMeter'),
+                elevation_gain_total_meters = summary.get('totalElevationGainInMeters'), 
+                elevation_loss_total_meters = summary.get('totalElevationLossInMeter'),
 
                 #is_parent = ???
                 #parent_summary_id = ???
                 
                 manually_entered = summary.get('manual'))
-            update_db_from_api_response(session, activity_summary, 'duration')     
+            update_db_from_api_response(session, activity_summary)
             
     return Response(status = 200)
 
@@ -127,27 +145,29 @@ def recieve_epochs():
         for summary in epochs:
             epoch_summary = epoch.Epoch_Summary(
                 sid = uid2sid(session,summary.get('userId')),
-                
-                start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
-                start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
-                
-                activity_type = summary.get('activityType'),
+
+                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds') +
+                         summary.get('startTimeOffsetInSeconds')),
 
                 duration = to_interval(summary.get('durationInSeconds')),
-                activeTime = to_interval(summary.get('activeTimeInSeconds')),
+                active_time = to_interval(summary.get('activeTimeInSeconds')),
     
+                activity_type = summary.get('activityType'),
+
                 steps = summary.get('steps'),
                 
-                distance = summary.get('distanceInMeters'),
+                distance_meters = summary.get('distanceInMeters'),
         
-                active_kilocalories = summary.get('activeKilocalories'),
+                active_kcal = summary.get('activeKilocalories'),
 
                 met = summary.get('met'),
+    
+                intensity_qualifer = summary.get('intensity'),
 
-                mean_motion_intensity = summary.get('meanMotionIntensity'),
-                max_motion_intensity = summary.get('maxMotionIntensity'))
+                mean_motion_intensity_score = summary.get('meanMotionIntensity'),
+                max_motion_intensity_score= summary.get('maxMotionIntensity'))
 
-            update_db_from_api_response(session, epoch_summary, 'duration')     
+            update_db_from_api_response(session, epoch_summary)
     return Response(status = 200)
 
 @bp.route('/sleeps', methods=['POST'])
@@ -169,25 +189,34 @@ def recieve_sleeps():
             sleep_summary = sleep.Sleep_Summary(
                 sid = uid2sid(session,summary.get('userId')),
                 
-                start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
-                start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
+                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds') +
+                         summary.get('startTimeOffsetInSeconds')),
                 
                 duration = to_interval(summary.get('durationInSeconds')),
                 unmeasurable_sleep_time = to_interval(summary.get('unmeasureableSleepInSeconds')),
-                deep_sleep_duration = to_interval(summary.get(
-                    'deepSleepDurationInSeconds')),
-                light_sleep_duration = to_interval(summary.get(
-                    'lightSleepDurationInSeconds')),   
-                rem_sleep_duration = to_interval(summary.get('remSleepInSeconds')),
-                awake_duration = to_interval(summary.get('awakeDurationInSeconds')),
-                
                 validation = summary.get('validation'),
             
             )                
 
-            #TODO: implement sleep levels time offset mapping.
-            update_db_from_api_response(session, sleep_summary, 'duration')
-           
+            update_db_from_api_response(session, sleep_summary)
+            
+            #Delete all sleep records matching anything with the same id
+            session.query(sleep_levels_sample.Sleep_Levels_Sample).filter_by(id=sleep_summary.id).delete()
+
+            #sleepLevelsMap come in as dicts with keys denoting a sleep level qualifier, and
+            #values containing dicts with a start time and end time.
+            for qualifier in summary.get('sleepLevelsMap'):
+                for sample in summary.get('sleepLevelsMap')[qualifier]:
+                    sleep_sample = sleep_levels_sample.Sleep_Levels_Sample(
+                        id = sleep_summary.id,
+                        sleep_qualifier = qualifier,
+                        start_time = datetime.fromtimestamp(
+                            sample['startTimeInSeconds'] + 
+                            summary.get('startTimeOffsetInSeconds')),
+                        duration = to_interval(sample['endTimeInSeconds'] - 
+                            sample['startTimeInSeconds']))
+                    session.add(sleep_sample)
+
     return Response(status = 200)
 
 @bp.route('/bodyComps', methods=['POST'])
@@ -198,20 +227,21 @@ def recieve_body_comp():
             bc = body_comp.Body_Composition(
                 sid = uid2sid(session,summary.get('userId')),
 
-                measurement_time_utc = datetime.fromtimestamp(summary.get('measurementTimeInSeconds')),
-                measurement_time_offset = to_interval(summary.get('measurementTimeOffsetInSeconds')),
+                measurement_time = datetime.fromtimestamp(
+                    summary.get('measurementTimeInSeconds') + summary.get(
+                        'measurementTimeOffsetInSeconds')),
 
-                muscle_mass = summary.get('muscleMassInGrams'),
-                bone_mass = summary.get('boneMassInGrams'),
+                muscle_mass_grams = summary.get('muscleMassInGrams'),
+                bone_mass_grams = summary.get('boneMassInGrams'),
             
                 body_water_percentage = summary.get('bodyWaterInPercent'),
                 body_fat_percentage = summary.get('bodyFatInPercent'),
                 body_mass_index = summary.get('bodyMassIndex'),
 
-                weight = summary.get('weightInGrams')
+                weight_grams = summary.get('weightInGrams')
             )
             
-            update_db_from_api_response(session,  bc, order_attr = 'measurement_time_utc')
+            update_db_from_api_response(session,  bc)
 
     return Response(status = 200)
 
@@ -220,20 +250,27 @@ def recieve_stress_details():
     stress_details = request.get_json()['stressDetails']
     with session_scope() as session:
         for summary in stress_details:
-            stress_summary = stress.Stress_Details(
-                sid = uid2sid(session,summary.get('userId')),
-                
-                start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
-                start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
-                duration = to_interval(summary.get('durationInSeconds')),                
-                )
-            update_db_from_api_response(session, stress_summary, 'duration',
-                    time_offset_dict = {body_battery_sample.Body_Battery_Sample:
-                                        summary.get('timeOffsetBodyBatteryValues'),
-                                        stress_sample.Stress_Sample:
-                                        summary.get('timeOffsetStressLevelValues')})
+                sid = uid2sid(session,summary.get('userId'))
+                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')
+                    +summary.get('startTimeOffsetInSeconds'))
 
-    
+                if summary.get('timeOffsetStressLevelValues') is not None:
+                    upsert_time_value_map(
+                        engine, 
+                        summary.get('timeOffsetStressLevelValues'),
+                        start_time, 
+                        sid, 
+                        stress_sample.Stress_Sample)
+
+                if summary.get('timeOffsetBodyBatteryValues') is not None:
+                    upsert_time_value_map(
+                        engine,
+                        summary.get('timeOffsetBodyBatteryValues'),
+                        start_time,
+                        sid,
+                        body_battery_sample.Body_Battery_Sample)
+                
+
     return Response(status = 200)
 
 
@@ -251,7 +288,7 @@ def recieve_user_metrics():
                 fitness_age = summary.get('fitnessAge')
             )
             
-            update_db_from_api_response(session, metric_summary, 'calendar_date')
+            update_db_from_api_response(session, metric_summary)
 
     return Response(status = 200)
 
@@ -264,14 +301,14 @@ def recieve_moveiq():
             move_iq_summary = move_iq.Move_Iq(
                 sid = uid2sid(session,summary.get('userId')),
 
-                start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
-                start_time_offset = to_interval(summary.get('offsetInSeconds')),
+                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds') + 
+                    summary.get('offsetInSeconds')),
                 duration = to_interval(summary.get('durationInSeconds')),
     
                 activity_type = summary.get('activityType'),
                 activity_subtype = summary.get('activitySubType')
             )
-            update_db_from_api_response(session, move_iq_summary, 'duration')
+            update_db_from_api_response(session, move_iq_summary)
                 
     return Response(status = 200)
 
@@ -280,18 +317,18 @@ def recieve_pulseox():
     pulse_ox_summaries = request.get_json()['pulseox']
     with session_scope() as session:
         for summary in pulse_ox_summaries:
-            pulse_ox_summary = pulse_ox.Pulse_Ox(
-                sid = uid2sid(session,summary.get('userId')),
-                
-                start_time_utc = datetime.fromtimestamp(summary.get('startTimeInSeconds')),
-                start_time_offset = to_interval(summary.get('startTimeOffsetInSeconds')),
-                duration = to_interval(summary.get('durationInSeconds')),
-           
-                on_demand = summary.get('OnDemand')
-            )
-    
-            update_db_from_api_response(session, pulse_ox_summary, 'duration',
-                 time_offset_dict = {pulse_ox_sample.Pulse_Ox_Sample : summary.get("timeOffsetSpo2Values")})
+            sid = uid2sid(session,summary.get('userId'))
+            
+            start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds') +
+                summary.get('startTimeOffsetInSeconds'))
+            
+            if summary.get('timeOffsetSpo2Values') is not None:
+                upsert_time_value_map(
+                    engine,
+                    summary.get('timeOffsetSpo2Values'),
+                    start_time,
+                    sid,
+                    pulse_ox_sample.Pulse_Ox_Sample)
     
     return Response(status = 200)
 
@@ -317,34 +354,19 @@ def clone_row(from_row, to_row):
         setattr(to_row,k, getattr(from_row,k))
 
 def update_db_from_api_response(session, 
-                                incoming_data,
-                                order_attr,
-                                time_offset_dict = None):
+                                incoming_data):
     """[Parameters:]
 
         * session: Uses the session that is passed in (so another does
             not need to be created.)
-        * table: The table in which we should look to find existing data
-        * json_resp: The JSON response object that we are querying to determine if
-            an update must occur.
-        * order_attr (default: 'duration'): The attribute that denotes which
-            database object is more recent. If obj_1.order_attr < obj_2.order_attr,
-            then obj_2 is considered more recent.
-        * time_offset_dict: A dictionary containing a time offset Table and a time offset 
-            value map, e.g. 
-                {Pulse_Ox_Time_Offset}: { 0 : 94, 5 : 90, 10: 95}}
-            Only necessary if the incoming data needs to be split into one or more
-            time series tables.
-
+        * incoming_data: the row object of the data we want to insert.
+ 
     [Background:] 
 
     When a JSON response is recieved from the garmin wellness API, it may
     include data that is already present in the database in some form. This 
-    helper function should be used to streamline deciding whether or not the data
-    that is present in the database matches any incoming data, and if so, whether
-    the incoming data or the existing data is more recent, and updating as necessary.
-    It dynamically pulls the primary key for the passed in data and matches based on
-    the attribute given in `order_attr`.
+    helper function will pull out any existing data in the database, delete it,
+    and enter the new summary.`
     
     In particular, section 6.1 of the Wellness REST API Specification states:
 
@@ -352,11 +374,10 @@ def update_db_from_api_response(session,
         Updates are summary data records for a given user with the same start  
         time and summary type as a previous summary data record and a duration
         that is either equal to or greater than the previous summary data’s
-        duration."
+        duration. [...] Each sync may generate updates and the latest summary
+        should always take precedence over previous records."
 
-    And so this is the criterion we (generally) operate on. Certain summaries (e.g.
-    sleep summaries) are ordered based on different criteria, and thus we allow
-    some flexibility in the arguments to this method.
+    This function does not add timeseries data. That is handled separately.
     """
     
 
@@ -368,7 +389,7 @@ def update_db_from_api_response(session,
     #Since the ID's are auto incremented, they aren't generated until an
     #object is added to the database. We remove them from pk_dict here
     #so that they don't cause an issue with filtering our query.
-    pk_dict.pop('id', None)    
+    #TODO: see if you need to uncomment this pk_dict.pop('id', None)    
 
     #Grab class object
     class_obj = inspect(incoming_data).class_.__mapper__ 
@@ -376,38 +397,13 @@ def update_db_from_api_response(session,
     #Grab the existing data
     db_data = session.query(class_obj).filter_by(**pk_dict).one_or_none()
             
-    if db_data is not None and \
-            getattr(db_data, order_attr) <= getattr(incoming_data, order_attr):
-        #The data already existed in the database, but the incoming data is more recent.
-        #We copy the id from the database, overwrite the db_data, and then copy it's id 
-        #back.
-        db_id =  getattr(db_data,'id', None)
-        clone_row(incoming_data, db_data)
-        if db_id is not None:
-            db_data.id=db_id
+    if db_data is not None:
+        session.delete(db_data)
         session.commit()
-        #Check if this is a time-offset-type summary, and update the time-offset data if so
-        if time_offset_dict is not None:
-            #Delete existing data
-            delete_time_offsets_from_db(session, time_offset_dict, db_id)
-            #Add new data
-            add_time_offsets_to_db(session, time_offset_dict, 
-                    incoming_data.start_time_utc + incoming_data.start_time_offset,
-                    db_id)
-    elif db_data is not None and \
-            getattr(db_data, order_attr) > getattr(incoming_data, order_attr):
-        #Existing data does not need to be updated
-        pass
-    else:
-        #Incoming data did not already exist. Add it
-        session.add(incoming_data)      
-        session.commit()
-        if time_offset_dict is not None:
-            add_time_offsets_to_db(session, time_offset_dict, 
-                incoming_data.start_time_utc + incoming_data.start_time_offset,
-                incoming_data.id)        
 
+    session.add(incoming_data)      
 
+    
 def uid2sid(session, uid):
     """Convert user identifier to subject identifier using an existing
     session."""
@@ -417,25 +413,28 @@ def uid2sid(session, uid):
     return subject.subject_id
 
 
-def add_time_offsets_to_db(session, time_offset_dict, start_time_local, fk_id):
-    for Table in time_offset_dict:
-        if time_offset_dict[Table] is None:
-                #Since we are using .get instead of string indexing on our api
-                #responses, time_offset_dict can contain None values. This just
-                #means we didn't recieve data for that time period. Skip it and move on.
-            continue
-        for time_offset in time_offset_dict[Table]:
-            time_offset_entry = Table(id = fk_id,
-                                            time_local = timedelta(int(time_offset)) + start_time_local,
-                                            value = time_offset_dict[Table][time_offset])
-            session.add(time_offset_entry)
+def upsert_time_value_map(engine, to_map, start_time, sid, table):
+    """Helper function to update timeseries-esque data such as
+        * pulse ox samples
+        * heart rate samples
+        * body batter samples
+        * stress samples
 
+    Takes an engine (to open a connection), 
+    a time_offset/value mapping, start_time, a subject ID,
+    and the table to insert into."""
+    
+    samples = []
+    for to_sample in to_map:
+        samples.append({
+            'time' : start_time + to_interval(int(to_sample)),
+            'value' :  to_map[to_sample],
+            'sid' : sid})
 
-def delete_time_offsets_from_db(session, time_offset_dict, fk_id):
-    for Table in time_offset_dict:
-        if time_offset_dict[Table] is None:
-                #Since we are using .get instead of string indexing on our api
-                #responses, time_offset_dict can contain None values. This just
-                #means we didn't recieve data for that time period. Skip it and move on.
-            continue
-        session.query(Table).filter_by(id =fk_id).delete()
+    conn = engine.connect()        
+    stmt = insert(table).values(samples)
+    stmt = stmt.on_conflict_do_nothing(index_elements=['sid','time'])
+    conn.execute(stmt)
+
+    conn.close()
+    

@@ -52,90 +52,45 @@ def test_clone_row():
 def test_update_db_from_api_response(app):
     """Put some dummy data in your dummy table, and then update it."""
     
-    
-    db_row = Dummy_Table(pk_attr = "123", attr1 = "db attr1", attr2 = 0,
-        attr3 = False, attr4 = to_interval(100))
-    recent_row = Dummy_Table(pk_attr = "123", attr1 = "recent attr1", attr2 = 1,
-        attr3 = True, attr4 = to_interval(200))
-    stale_row =  Dummy_Table(pk_attr = "123", attr1 = "stale attr1", attr2 = 2,
-        attr3 = False, attr4 = to_interval(50))
-    new_row = Dummy_Table(pk_attr = "456", attr1 = "new attr1")
+    row1 = Dummy_Table(pk_attr = "123", attr1 = "1", attr2 = 1)
+    row2 =  Dummy_Table(pk_attr = "123", attr1 = "2", attr3 = True)
+    row3 = Dummy_Table(pk_attr = "456", attr1 = "3", attr2 = 3)
 
     with session_scope() as session:
-        #First add some data to the DB, then delete it from the session so we
-        #start blank.
-        session.add(db_row)
-        session.commit()
-        session.expunge(db_row)
+        #firt row gets added to a blank db.
+        update_db_from_api_response(session, row1)
         
-        #Now update it with recent data
-        update_db_from_api_response(session, recent_row, "attr4")
+        query_result = session.query(Dummy_Table).one()
+
+        assert query_result.attr1 == "1", "row1.attr1 failed." 
+        assert query_result.pk_attr == "123", "row1.pk_attr failed."
+        assert query_result.attr2 == 1, "row1.attr2 failed."
+    
+        #second row should replace first row entirely
+        update_db_from_api_response(session, row2)
         
-        query = session.query(Dummy_Table).filter_by(pk_attr = "123")
+        query_result = session.query(Dummy_Table).one()
+
+        assert query_result.pk_attr == "123", "row2.pk_attr failed"
+        assert query_result.attr1 == "2", "row2.attr1 failed"
+        assert getattr(query_result,'attr2') == None, "row2.attr2 failed"
+        assert query_result.attr3 == True, "row2.attr3 failed"
+
+        #third row should not replace row 2, and should add its own row
+        update_db_from_api_response(session, row3)
+
+        query_result = session.query(Dummy_Table).filter_by(pk_attr = "123").one()
+
+        assert query_result.pk_attr == "123", "Error in adding row3: row2.pk_attr modified."
+        assert query_result.attr1 == "2", "Error in adding row3: row2.attr1 modified."
+        assert getattr(query_result, 'attr2') == None, "Error in adding row3: row2.attr2 modified."
+        assert query_result.attr3 == True, "Error in adding row3: row2.attr3 modified."
+
+        query_result = session.query(Dummy_Table).filter_by(pk_attr = "456").one()
         
-        #Only one result should have been returned    
-        assert query.count() == 1, "Update from db_row to recent_row added multiple results."
-        #Check that it contains the updated data
-        assert query.first().attr1 == "recent attr1", "Update from db_row to recent_row"\
-            " did not succeed in updating attr1."
-        
-        #Make sure stale rows don't overwrite recent rows
-        update_db_from_api_response(session, stale_row, "attr4")
-
-        #Only one result should have been returned    
-        assert query.count() == 1, "Anti-Update from recent_row to stale_row added"\
-            "multiple results."
-        #Check that it contains the updated data
-        assert query.first().attr1 == "recent attr1", "Anti-Update from to recent_row"\
-            "changed attr1 when it shouldn't have."
-         
-        #Make sure new rows are added appropriately.
-        update_db_from_api_response(session,  new_row, "attr4")
-
-        query = session.query(Dummy_Table).filter_by(pk_attr = "456")
-        
-        #Make sure only one row was added
-        assert query.count() == 1, "Multiple new rows added when new_row added."
-        assert query.first().attr1 == "new attr1", "new_row attr1 not saved correctly."
-
-        #All together now! We're going to wip the table, then
-        # add the rows in random order, and make sure that only 
-        #the proper rows remain at the end.
-        import random
-
-        for _ in range(10):
-            #Wipe the table.
-            session.query(Dummy_Table).delete()
-            session.commit()
-            assert session.query(Dummy_Table).count() == 0
-            #Since these objects are deleted, we also need to remove them
-            #from the session.
-            session.expunge_all()
-        
-            #Recreate our rows (I think there's a better way to do this, but SQLalchemy
-            #complains about detached objects if I don't.)
-            db_row = Dummy_Table(pk_attr = "123", attr1 = "db attr1", attr2 = 0,
-                attr3 = False, attr4 = to_interval(100))
-            recent_row = Dummy_Table(pk_attr = "123", attr1 = "recent attr1", attr2 = 1,
-                attr3 = True, attr4 = to_interval(200))
-            stale_row =  Dummy_Table(pk_attr = "123", attr1 = "stale attr1", attr2 = 2,
-                attr3 = False, attr4 = to_interval(50))
-            new_row = Dummy_Table(pk_attr = "456", attr1 = "new attr1")
-
-
-
-            ###Randomized testing from here out.
-            row_list = [new_row, db_row, recent_row, stale_row]
-
-            random.shuffle(row_list)
-            
-            for row in row_list:
-                update_db_from_api_response(session, row, "attr4")
-
-            assert session.query(Dummy_Table).count() == 2, "More than two rows added when only two should have been."
-            assert session.query(Dummy_Table).filter_by(pk_attr = "456").first().attr1 == "new attr1"
-
-            assert session.query(Dummy_Table).filter_by(pk_attr = "123").first().attr1 == "recent attr1"
+        assert query_result.pk_attr == "456", "row3.pk_attr failed"
+        assert query_result.attr1 == "3",  "row3.attr1 failed"
+        assert query_result.attr2 == 3, "row3.attr2 failed"
 
 
 

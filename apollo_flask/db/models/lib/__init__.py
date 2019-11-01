@@ -56,3 +56,6 @@ SLEEP_VALIDATION_ENUM = Enum(
     name = 'Sleep_Validation',
     schema = 'garmin_wellness'
 )
+
+SLEEP_QUALIFIER_ENUM = Enum(
+    'deep', 'light', 'rem', 'awake', name = 'Sleep_Qualifier', schema = 'garmin_wellness')

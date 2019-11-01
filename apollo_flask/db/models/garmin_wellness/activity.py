@@ -11,28 +11,27 @@ class Activity_Summary(Base):
 
     sid = Column(String, ForeignKey('subject.subject_id'), primary_key=True)
     
-    start_time_utc = Column(DateTime, primary_key = True)
-    start_time_offset = Column(INTERVAL)
+    start_time = Column(DateTime, primary_key = True)
 
     duration = Column(INTERVAL)
     
-    avg_bike_cadence = Column(Float) #rounds per minute
-    max_bike_cadence = Column(Float)
+    avg_bike_cadence_rounds_per_minute = Column(Float) 
+    max_bike_cadence_rounds_per_minute = Column(Float)
 
-    avg_heart_rate = Column(Integer) #beats per minute
+    avg_heart_rate = Column(Integer) 
     max_heart_rate = Column(Integer)
 
-    avg_run_cadence = Column(Float) #steps per minute
-    max_run_cadence = Column(Float) #steps per minute
+    avg_run_cadence_steps_per_minute = Column(Float) 
+    max_run_cadence_steps_per_minute = Column(Float) 
 
-    avg_speed = Column(Float) #meters per second
-    max_speed = Column(Float)
+    avg_speed_meters_per_second = Column(Float)
+    max_speed_meters_per_second = Column(Float)
 
-    avg_swim_cadence = Column(Float) #strokes per minute
+    avg_swim_cadence_strokes_per_minute = Column(Float) 
     
 
-    avg_pace = Column(Integer) #minutes per kilometer
-    max_pace = Column(Integer)    
+    avg_pace_minutes_per_km = Column(Integer) 
+    max_pace_minutes_per_km = Column(Integer)    
 
     active_kcal = Column(Integer)
 
@@ -40,15 +39,15 @@ class Activity_Summary(Base):
 
     steps = Column(Integer)
 
-    distance = Column(Float) #meters
+    distance_meters = Column(Float)
 
     number_of_active_lengths = Column(Integer)
 
-    starting_latitude = Column(Float) #In degrees; TODO: Change this to a GIS datatype?
-    starting_longitude = Column(Float)
+    starting_latitude_degrees = Column(Float)
+    starting_longitude_degrees = Column(Float)
 
-    elevation_gain = Column(Float) #total, in meters
-    elevation_loss = Column(Float) #total
+    elevation_gain_total_meters = Column(Float)
+    elevation_loss_total_meters = Column(Float) 
 
     ## NOTE: These two columns are apparently used for activities like "MULTI_SPORT", but 
     # I can't find any details on when they'd occur. The "MULTI_SPORT" activity itself is

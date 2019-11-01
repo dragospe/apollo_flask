@@ -11,24 +11,23 @@ class Epoch_Summary(Base):
     __table_args__ = {'schema':'garmin_wellness'}
 
     sid = Column(String, ForeignKey('subject.subject_id'), primary_key = True)
-    start_time_utc = Column(DateTime, primary_key = True)
-    start_time_offset = Column(INTERVAL)
+    start_time = Column(DateTime, primary_key = True)
 
     duration = Column(INTERVAL)
-    activeTime = Column(INTERVAL) 
+    active_time = Column(INTERVAL) 
     
     activity_type = Column(ACTIVITY_TYPE_ENUM)
 
     steps = Column(Integer)
 
-    distance = Column(Float) #meters
+    distance_meters = Column(Float) 
 
-    active_kilocalories = Column(Integer)
+    active_kcal = Column(Integer)
     
     met = Column(Float) #metabolic equivalent of task
     
-    intensity = Column(WELLNESS_MONITORING_INTENSITY_ENUM)
+    intensity_qualifer = Column(WELLNESS_MONITORING_INTENSITY_ENUM)
 
-    mean_motion_intensity = Column(Float) #See appendix D of the API spec
-    max_motion_intensity = Column(Float) #See appendix D of the API spec
+    mean_motion_intensity_score = Column(Float) #See appendix D of the API spec
+    max_motion_intensity_score = Column(Float) #See appendix D of the API spec
 
