@@ -11,23 +11,38 @@ class Epoch_Summary(Base):
     __table_args__ = {'schema':'garmin_wellness'}
 
     sid = Column(String, ForeignKey('subject.subject_id'), primary_key = True)
-    start_time = Column(DateTime, primary_key = True)
+    start_time_local = Column(DateTime, 
+        CheckConstraint("start_time_local >= date '2019-01-01'", 
+            name = "start_time >= 2019"),
+        primary_key = True)
 
-    duration = Column(INTERVAL)
-    active_time = Column(INTERVAL) 
+    duration = Column(INTERVAL, CheckConstraint("duration >= '0'::interval",
+        name = "duration > 0"))
+    active_time = Column(INTERVAL, CheckConstraint("active_time >= '0'::interval"))
     
     activity_type = Column(ACTIVITY_TYPE_ENUM)
 
-    steps = Column(Integer)
+    steps = Column(Integer, CheckConstraint("steps >= 0", name = "steps >= 0"))
 
-    distance_meters = Column(Float) 
+    distance_meters = Column(Float, CheckConstraint("distance_meters >= 0", 
+       name = "distance_meters >= 0")) 
 
-    active_kcal = Column(Integer)
+    active_kcal = Column(Integer, CheckConstraint("active_kcal >= 0", 
+        name = "active_kcal >= 0"))
     
-    met = Column(Float) #metabolic equivalent of task
+    metabolic_equivalent_of_task = Column(Float, 
+        CheckConstraint('metabolic_equivalent_of_task >= 0',
+            name = 'm.e.t. >= 0'))
     
     intensity_qualifer = Column(WELLNESS_MONITORING_INTENSITY_ENUM)
 
-    mean_motion_intensity_score = Column(Float) #See appendix D of the API spec
-    max_motion_intensity_score = Column(Float) #See appendix D of the API spec
-
+    #See appendix D of the API spec
+    mean_motion_intensity_score = Column(Float,
+        CheckConstraint("mean_motion_intensity_score >= 0 AND \
+            mean_motion_intensity_score <= 7",
+            name = "mean_motion_intensity_score bounds"))
+    max_motion_intensity_score = Column(Float,
+        CheckConstraint("max_motion_intensity_score >= 0 AND \
+            max_motion_intensity_score <= 7 AND \
+            mean_motion_intensity_score <= max_motion_intensity_score",
+            name = "max_motion_intensity_score bounds"))

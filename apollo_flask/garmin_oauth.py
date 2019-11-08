@@ -128,6 +128,7 @@ def callback():
         #If the garmin UID does not exist in the database, add it.
         elif db_uid is None:
             session.add(uid)
+            session.commit()
         #If the SID does not exist in the database, add it.
         if db_sid is None:
             subject = Subject(subject_id = rt.sid, garmin_uid = uid.user_id)

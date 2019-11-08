@@ -9,7 +9,16 @@ class User_Metrics(Base):
 
     sid = Column(String, ForeignKey('subject.subject_id'), primary_key = True)
 
-    calendar_date = Column(Date, primary_key = True)
+    calendar_date = Column(Date,
+        CheckConstraint("calendar_date >= date '2019-01-01'",
+            name = "calendar_date >= 2019"),
+        primary_key = True)
 
-    vo2_max = Column(Float)
-    fitness_age = Column(Integer)
+    vo2_max_ml_per_min_per_kg = Column(Float,
+        CheckConstraint('vo2_max_ml_per_min_per_kg <= 100 AND \
+            vo2_max_ml_per_min_per_kg >= 0',
+            name = "vo2_max bounds"))
+
+    fitness_age = Column(Integer,
+        CheckConstraint("fitness_age >= 0 AND fitness_age <= 110",
+            name = "fitness_age bounds"))

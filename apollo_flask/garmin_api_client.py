@@ -26,7 +26,7 @@ def recieve_dailies():
             daily = daily_summary.Daily_Summary(
                 sid = uid2sid(session,summary.get('userId')),
 
-                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds') +
+                start_time_local = datetime.fromtimestamp(summary.get('startTimeInSeconds') +
                          summary.get('startTimeOffsetInSeconds')),
 
                 duration = to_interval(summary.get('durationInSeconds')),
@@ -38,19 +38,28 @@ def recieve_dailies():
                 bmr_kcal = summary.get('bmrKilocalories'),
                 consumed_cal = summary.get('consumedCalories'),
 
-                moderate_intensity_duration = to_interval(
+                moderate_intensity_duration_seconds = to_interval(
                         summary.get('moderateIntensityDurationInSeconds')),
-                vigorous_intensity_duration = to_interval(
+                vigorous_intensity_duration_seconds = to_interval(
                         summary.get('vigorousIntensityDurationInSeconds')),
           
                 floors_climbed = summary.get('floorsClimbed'),
            
-                min_heart_rate = summary.get('minHeartRateInBeatsPerMinute'),
-                avg_heart_rate = summary.get('averageHeartRateInBeatsPerMinute'),
-                max_heart_rate = summary.get('maxHeartRateInBeatsPerMinute'),
-                resting_heart_rate = summary.get('restingHeartRateInBeatsPerMinute'),
+                min_heart_rate_for_monitoring_period = summary.get(
+                    'minHeartRateInBeatsPerMinute'),
+                avg_heart_rate_for_week = summary.get(
+                    'averageHeartRateInBeatsPerMinute'),
+                max_heart_rate_for_monitoring_period = summary.get(
+                    'maxHeartRateInBeatsPerMinute'),
+                resting_heart_rate_for_monitoring_period = summary.get(
+                    'restingHeartRateInBeatsPerMinute'),
             
-                average_stress_level = summary.get('averageStressLevel'),
+                # Stress levels are between 1 and 100, unless not enough data
+                # was available; then the avg stress level is reported as -1.
+                # We drop these.
+                average_stress_level = summary.get('averageStressLevel') if \
+                    summary.get('averageStressLevel') is not None and \
+                        summary.get('averageStressLevel') > 0 else None,
                 max_stress_level = summary.get('maxStressLevel'),
                 stress_duration = to_interval(summary.get('stressDurationInSeconds')),
                 rest_stress_duration = to_interval(summary.get('restStressDurationInSeconds')),
@@ -72,7 +81,7 @@ def recieve_dailies():
             update_db_from_api_response(session, daily)
             if summary.get('timeOffsetHeartRateSamples') != {}:
                 upsert_time_value_map(engine, summary.get('timeOffsetHeartRateSamples'),
-                    daily.start_time, daily.sid, heart_rate_sample.Heart_Rate_Sample)
+                    daily.start_time_local, daily.sid, heart_rate_sample.Heart_Rate_Sample)
 
     return Response(status=200)
 
@@ -87,7 +96,7 @@ def recieve_activities():
             activity_summary = activity.Activity_Summary(
                 sid = uid2sid(session,summary.get('userId')),
 
-                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds') +
+                start_time_local = datetime.fromtimestamp(summary.get('startTimeInSeconds') +
                          summary.get('startTimeOffsetInSeconds')),
 
                 duration = to_interval(summary.get('durationInSeconds')),
@@ -146,7 +155,7 @@ def recieve_epochs():
             epoch_summary = epoch.Epoch_Summary(
                 sid = uid2sid(session,summary.get('userId')),
 
-                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds') +
+                start_time_local = datetime.fromtimestamp(summary.get('startTimeInSeconds') +
                          summary.get('startTimeOffsetInSeconds')),
 
                 duration = to_interval(summary.get('durationInSeconds')),
@@ -160,7 +169,7 @@ def recieve_epochs():
         
                 active_kcal = summary.get('activeKilocalories'),
 
-                met = summary.get('met'),
+                metabolic_equivalent_of_task = summary.get('met'),
     
                 intensity_qualifer = summary.get('intensity'),
 
@@ -189,7 +198,7 @@ def recieve_sleeps():
             sleep_summary = sleep.Sleep_Summary(
                 sid = uid2sid(session,summary.get('userId')),
                 
-                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds') +
+                start_time_local = datetime.fromtimestamp(summary.get('startTimeInSeconds') +
                          summary.get('startTimeOffsetInSeconds')),
                 
                 duration = to_interval(summary.get('durationInSeconds')),
@@ -210,7 +219,7 @@ def recieve_sleeps():
                     sleep_sample = sleep_levels_sample.Sleep_Levels_Sample(
                         id = sleep_summary.id,
                         sleep_qualifier = qualifier,
-                        start_time = datetime.fromtimestamp(
+                        start_time_local = datetime.fromtimestamp(
                             sample['startTimeInSeconds'] + 
                             summary.get('startTimeOffsetInSeconds')),
                         duration = to_interval(sample['endTimeInSeconds'] - 
@@ -227,7 +236,7 @@ def recieve_body_comp():
             bc = body_comp.Body_Composition(
                 sid = uid2sid(session,summary.get('userId')),
 
-                measurement_time = datetime.fromtimestamp(
+                measurement_time_local = datetime.fromtimestamp(
                     summary.get('measurementTimeInSeconds') + summary.get(
                         'measurementTimeOffsetInSeconds')),
 
@@ -251,22 +260,31 @@ def recieve_stress_details():
     with session_scope() as session:
         for summary in stress_details:
                 sid = uid2sid(session,summary.get('userId'))
-                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds')
+                start_time_local = datetime.fromtimestamp(summary.get('startTimeInSeconds')
                     +summary.get('startTimeOffsetInSeconds'))
 
-                if summary.get('timeOffsetStressLevelValues') is not None:
-                    upsert_time_value_map(
-                        engine, 
-                        summary.get('timeOffsetStressLevelValues'),
-                        start_time, 
-                        sid, 
-                        stress_sample.Stress_Sample)
+                sample_map = summary.get('timeOffsetStressLevelValues')
+                if sample_map is not None:
+                    # The stress level values are reported as -1 if there
+                    # was not enough data to calculate a dress. We want to 
+                    # drop these.
+                    sample_map = {time:value for time, value in \
+                        sample_map.items() if value >= 0}
+
+                    # Make sure there are samples actually left:
+                    if sample_map != {}:
+                        upsert_time_value_map(
+                            engine, 
+                            sample_map,
+                            start_time_local, 
+                            sid, 
+                            stress_sample.Stress_Sample)
 
                 if summary.get('timeOffsetBodyBatteryValues') is not None:
                     upsert_time_value_map(
                         engine,
                         summary.get('timeOffsetBodyBatteryValues'),
-                        start_time,
+                        start_time_local,
                         sid,
                         body_battery_sample.Body_Battery_Sample)
                 
@@ -284,7 +302,7 @@ def recieve_user_metrics():
         
                 calendar_date = get_calendar_date(summary),
         
-                vo2_max = summary.get('vo2Max'),
+                vo2_max_ml_per_min_per_kg = summary.get('vo2Max'),
                 fitness_age = summary.get('fitnessAge')
             )
             
@@ -301,7 +319,7 @@ def recieve_moveiq():
             move_iq_summary = move_iq.Move_Iq(
                 sid = uid2sid(session,summary.get('userId')),
 
-                start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds') + 
+                start_time_local = datetime.fromtimestamp(summary.get('startTimeInSeconds') + 
                     summary.get('offsetInSeconds')),
                 duration = to_interval(summary.get('durationInSeconds')),
     
@@ -319,14 +337,14 @@ def recieve_pulseox():
         for summary in pulse_ox_summaries:
             sid = uid2sid(session,summary.get('userId'))
             
-            start_time = datetime.fromtimestamp(summary.get('startTimeInSeconds') +
+            start_time_local = datetime.fromtimestamp(summary.get('startTimeInSeconds') +
                 summary.get('startTimeOffsetInSeconds'))
             
             if summary.get('timeOffsetSpo2Values') is not None:
                 upsert_time_value_map(
                     engine,
                     summary.get('timeOffsetSpo2Values'),
-                    start_time,
+                    start_time_local,
                     sid,
                     pulse_ox_sample.Pulse_Ox_Sample)
     
@@ -413,7 +431,7 @@ def uid2sid(session, uid):
     return subject.subject_id
 
 
-def upsert_time_value_map(engine, to_map, start_time, sid, table):
+def upsert_time_value_map(engine, to_map, start_time_local, sid, table):
     """Helper function to update timeseries-esque data such as
         * pulse ox samples
         * heart rate samples
@@ -421,19 +439,19 @@ def upsert_time_value_map(engine, to_map, start_time, sid, table):
         * stress samples
 
     Takes an engine (to open a connection), 
-    a time_offset/value mapping, start_time, a subject ID,
+    a time_offset/value mapping, start_time_local, a subject ID,
     and the table to insert into."""
     
     samples = []
     for to_sample in to_map:
         samples.append({
-            'time' : start_time + to_interval(int(to_sample)),
+            'time_local' : start_time_local + to_interval(int(to_sample)),
             'value' :  to_map[to_sample],
             'sid' : sid})
 
     conn = engine.connect()        
     stmt = insert(table).values(samples)
-    stmt = stmt.on_conflict_do_nothing(index_elements=['sid','time'])
+    stmt = stmt.on_conflict_do_nothing(index_elements=['sid','time_local'])
     conn.execute(stmt)
 
     conn.close()

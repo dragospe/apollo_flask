@@ -16,9 +16,13 @@ class Move_Iq(Base):
 
     sid = Column(String, ForeignKey('subject.subject_id'), primary_key = True)
 
-    start_time = Column(DateTime, primary_key = True)
+    start_time_local = Column(DateTime, 
+        CheckConstraint("start_time_local >= date '2019-01-01'",
+            name = "start_time >= 2019"),
+        primary_key = True)
 
-    duration = Column(INTERVAL)
+    duration = Column(INTERVAL, CheckConstraint("duration >= '0'::interval",
+        name = "duration > 0"))
     
     #Note: Activity (sub)types are either undocumented or just arbitrary; in
     #particular, they do not necessarily match those given in appendix A of the
