@@ -251,11 +251,11 @@ def test_recieve_user_metrics(client):
 
     add_uids(user_metrics)
 
-    resp = client.post('/api_client/garmin/UserMetrics',
+    resp = client.post('/api_client/garmin/userMetrics',
                 data= json.dumps(data),
                 content_type = 'application/json')
     assert resp.status_code == 200
-    resp = client.post('/api_client/garmin/UserMetrics',
+    resp = client.post('/api_client/garmin/userMetrics',
                 data= json.dumps(data),
                 content_type = 'application/json')
     assert resp.status_code == 200
