@@ -15,8 +15,7 @@ class User_Metrics(Base):
         primary_key = True)
 
     vo2_max_ml_per_min_per_kg = Column(Float,
-        CheckConstraint('vo2_max_ml_per_min_per_kg <= 100 AND \
-            vo2_max_ml_per_min_per_kg >= 0',
+        CheckConstraint('vo2_max_ml_per_min_per_kg >= 0',
             name = "vo2_max bounds"))
 
     fitness_age = Column(Integer,
