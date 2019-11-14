@@ -198,22 +198,38 @@ def recieve_sleeps():
             sleep_summary = sleep.Sleep_Summary(
                 sid = uid2sid(session,summary.get('userId')),
                 
-                start_time_local = datetime.fromtimestamp(summary.get('startTimeInSeconds') +
-                         summary.get('startTimeOffsetInSeconds')),
+                start_time_local = datetime.fromtimestamp(summary.get(
+                    'startTimeInSeconds') + \
+                    summary.get('startTimeOffsetInSeconds')),
                 
                 duration = to_interval(summary.get('durationInSeconds')),
-                unmeasurable_sleep_time = to_interval(summary.get('unmeasureableSleepInSeconds')),
+                unmeasurable_sleep_time = to_interval(summary.get(
+                    'unmeasureableSleepInSeconds')),
                 validation = summary.get('validation'),
-            
             )                
 
-            update_db_from_api_response(session, sleep_summary)
-            
-            #Delete all sleep records matching anything with the same id
-            session.query(sleep_levels_sample.Sleep_Levels_Sample).filter_by(id=sleep_summary.id).delete()
+            # Determine if there is already a sleep record for this subject/time.
+            db_sleep = session.query(sleep.Sleep_Summary).filter_by(
+                sid=sleep_summary.sid,
+                start_time_local = sleep_summary.start_time_local).one_or_none()
+            # Copy it over if so
+            if db_sleep is not None:
+                sleep_summary.id = db_sleep.id
+                # Delete the summary and samples associated with the id.
+                session.query(sleep_levels_sample.Sleep_Levels_Sample).filter_by(
+                    id=sleep_summary.id).delete()
+                session.delete(db_sleep)
+                session.commit()
 
-            #sleepLevelsMap come in as dicts with keys denoting a sleep level qualifier, and
-            #values containing dicts with a start time and end time.
+            update_db_from_api_response(session, sleep_summary)
+
+            # After we've added our sleep summary, it should have an ID;
+            # either auto-generated after adding, or taken from db_sleep.id  
+            session.commit()
+           
+            # sleepLevelsMap come in as dicts with keys denoting a sleep level 
+            # qualifier, and values containing dicts with a start time and
+            # end time.
             for qualifier in summary.get('sleepLevelsMap'):
                 for sample in summary.get('sleepLevelsMap')[qualifier]:
                     sleep_sample = sleep_levels_sample.Sleep_Levels_Sample(

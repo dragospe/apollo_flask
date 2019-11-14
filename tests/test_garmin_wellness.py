@@ -113,10 +113,14 @@ def test_recieve_activities(client):
 
     add_uids(activities)
 
-    client.post('/api_client/garmin/activities',
+    resp = client.post('/api_client/garmin/activities',
                 data= json.dumps(data),
                 content_type = 'application/json')
-
+    assert resp.status_code == 200
+    resp = client.post('/api_client/garmin/activities',
+                data= json.dumps(data),
+                content_type = 'application/json')
+    assert resp.status_code == 200
 
 def test_recieve_body_comps(client):
     with open('tests/garmin_api_responses/body_comps.json', 'r') as f:
@@ -126,10 +130,14 @@ def test_recieve_body_comps(client):
 
     add_uids(body_comps)
 
-    client.post('/api_client/garmin/bodyComps',
+    resp = client.post('/api_client/garmin/bodyComps',
                 data= json.dumps(data),
                 content_type = 'application/json')
-
+    assert resp.status_code == 200
+    resp = client.post('/api_client/garmin/bodyComps',
+                data= json.dumps(data),
+                content_type = 'application/json')
+    assert resp.status_code == 200
 
 def test_recieve_dailies(client):
     with open('tests/garmin_api_responses/dailies.json', 'r') as f:
@@ -139,9 +147,14 @@ def test_recieve_dailies(client):
 
     add_uids(dailies)
 
-    client.post('/api_client/garmin/dailies',
+    resp = client.post('/api_client/garmin/dailies',
                 data= json.dumps(data),
                 content_type = 'application/json')
+    assert resp.status_code == 200
+    resp = client.post('/api_client/garmin/dailies',
+                data= json.dumps(data),
+                content_type = 'application/json')
+    assert resp.status_code == 200
 
 def test_recieve_epochs(client):
     with open('tests/garmin_api_responses/epochs.json', 'r') as f:
@@ -151,10 +164,14 @@ def test_recieve_epochs(client):
 
     add_uids(epochs)
 
-    client.post('/api_client/garmin/epochs',
+    resp = client.post('/api_client/garmin/epochs',
                 data= json.dumps(data),
                 content_type = 'application/json')
-
+    assert resp.status_code == 200
+    resp = client.post('/api_client/garmin/epochs',
+                data= json.dumps(data),
+                content_type = 'application/json')
+    assert resp.status_code == 200
 
 def test_recieve_move_iq(client):
     with open('tests/garmin_api_responses/moveiq.json', 'r') as f:
@@ -164,10 +181,14 @@ def test_recieve_move_iq(client):
 
     add_uids(moveiq)
 
-    client.post('/api_client/garmin/moveiq',
+    resp = client.post('/api_client/garmin/moveiq',
                 data= json.dumps(data),
                 content_type = 'application/json')
-
+    assert resp.status_code == 200
+    resp = client.post('/api_client/garmin/moveiq',
+                data= json.dumps(data),
+                content_type = 'application/json')
+    assert resp.status_code == 200
 
 def test_recieve_pulse_ox(client):
     with open('tests/garmin_api_responses/pulse_ox.json', 'r') as f:
@@ -177,9 +198,15 @@ def test_recieve_pulse_ox(client):
 
     add_uids(pulseox)
 
-    client.post('/api_client/garmin/pulseOx',
+    resp = client.post('/api_client/garmin/pulseOx',
                 data= json.dumps(data),
                 content_type = 'application/json')
+    assert resp.status_code == 200
+    resp = client.post('/api_client/garmin/pulseOx',
+                data= json.dumps(data),
+                content_type = 'application/json')
+    assert resp.status_code == 200
+
 
 
 def test_recieve_sleep(client):
@@ -190,10 +217,14 @@ def test_recieve_sleep(client):
 
     add_uids(sleeps)
 
-    client.post('/api_client/garmin/sleeps',
+    resp = client.post('/api_client/garmin/sleeps',
                 data= json.dumps(data),
                 content_type = 'application/json')
-
+    assert resp.status_code == 200
+    resp = client.post('/api_client/garmin/sleeps',
+                data= json.dumps(data),
+                content_type = 'application/json')
+    assert resp.status_code == 200
 
 def test_recieve_stress(client):
     with open('tests/garmin_api_responses/stress_details.json', 'r') as f:
@@ -203,9 +234,14 @@ def test_recieve_stress(client):
 
     add_uids(stress_details)
 
-    client.post('/api_client/garmin/stressDetails',
+    resp = client.post('/api_client/garmin/stressDetails',
                 data= json.dumps(data),
                 content_type = 'application/json')
+    assert resp.status_code == 200
+    resp = client.post('/api_client/garmin/stressDetails',
+                data= json.dumps(data),
+                content_type = 'application/json')
+    assert resp.status_code == 200
 
 def test_recieve_user_metrics(client):
     with open('tests/garmin_api_responses/user_metrics_summaries.json', 'r') as f:
@@ -215,9 +251,15 @@ def test_recieve_user_metrics(client):
 
     add_uids(user_metrics)
 
-    client.post('/api_client/garmin/UserMetrics',
+    resp = client.post('/api_client/garmin/userMetrics',
                 data= json.dumps(data),
                 content_type = 'application/json')
+    assert resp.status_code == 200
+    resp = client.post('/api_client/garmin/userMetrics',
+                data= json.dumps(data),
+                content_type = 'application/json')
+    assert resp.status_code == 200
+
 
 
 
