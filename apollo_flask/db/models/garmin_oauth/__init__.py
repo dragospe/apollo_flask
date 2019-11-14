@@ -47,9 +47,7 @@ class Request_Token(Base):
     sid = Column(String, nullable=False)
     request_token = Column(String, primary_key=True)
     request_token_secret = Column(String, nullable=False)
-    
-    
-	
+
 class Access_Token(Base):
     """Stores an access token, corresponding secret, and the user id the 
     token is authorized for."""
@@ -62,3 +60,4 @@ class Access_Token(Base):
     access_token = Column(String, primary_key=True)
     access_token_secret = Column(String, nullable=False)
     relationship('User_Id', back_populates='access_tokens')
+
