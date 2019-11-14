@@ -14,5 +14,5 @@ class Pulse_Ox_Sample(Base):
         primary_key=True)
 
     value = Column(Integer, 
-        CheckConstraint("value <= 100 AND value >= 50", name = "spo2 bounds"))
+        CheckConstraint("value BETWEEN 0 and 100", name = "spo2 bounds"))
     on_demand = Column(Boolean)

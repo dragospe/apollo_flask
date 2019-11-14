@@ -20,5 +20,5 @@ class User_Metrics(Base):
             name = "vo2_max bounds"))
 
     fitness_age = Column(Integer,
-        CheckConstraint("fitness_age >= 0 AND fitness_age <= 110",
+        CheckConstraint("fitness_age >= 0",
             name = "fitness_age bounds"))

@@ -13,6 +13,6 @@ class Stress_Sample(Base):
         CheckConstraint("time_local >= date '2019-01-01'",
             name = "time_local >= 2019"),
         primary_key = True)
-    value = Column(Integer, CheckConstraint("value >= 0 AND value <= 100",
+    value = Column(Integer, CheckConstraint("value BETWEEN 0 AND 100",
         name = "stress value bounds"))
     

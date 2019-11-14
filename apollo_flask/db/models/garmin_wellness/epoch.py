@@ -38,11 +38,9 @@ class Epoch_Summary(Base):
 
     #See appendix D of the API spec
     mean_motion_intensity_score = Column(Float,
-        CheckConstraint("mean_motion_intensity_score >= 0 AND \
-            mean_motion_intensity_score <= 7",
+        CheckConstraint("mean_motion_intensity_score BETWEEN 0 AND 7",
             name = "mean_motion_intensity_score bounds"))
     max_motion_intensity_score = Column(Float,
-        CheckConstraint("max_motion_intensity_score >= 0 AND \
-            max_motion_intensity_score <= 7 AND \
-            mean_motion_intensity_score <= max_motion_intensity_score",
+        CheckConstraint("max_motion_intensity_score BETWEEN mean_motion_intensity_score AND 7",
             name = "max_motion_intensity_score bounds"))
+

@@ -19,15 +19,20 @@ class Body_Composition(Base):
         primary_key = True) 
 
     muscle_mass_grams = Column(Integer, 
-        CheckConstraint("muscle_mass_grams >= 0", name ="muscle_mass >= 0"))
-    bone_mass_grams = Column(Integer, CheckConstraint("bone_mass_grams >= 0",
-        name = "bone_mass_grams >= 0"))
+        CheckConstraint(
+        "muscle_mass_grams BETWEEN 0 AND weight_grams",
+        name ="muscle_mass_sensible"))
+
+    bone_mass_grams = Column(Integer, CheckConstraint(
+        "bone_mass_grams BETWEEN 0 AND weight_grams",
+        name = "bone_mass_grams_sensible"))
     
     body_water_percentage = Column(Float, CheckConstraint(
-        "body_water_percentage >= 0 AND body_water_percentage <= 100",
+        "body_water_percentage BETWEEN 0 AND 100",
         name= "body_water bounds"))
+
     body_fat_percentage = Column(Float, CheckConstraint(
-        "body_fat_percentage >= 0 AND body_fat_percentage <= 100",
+        "body_fat_percentage BETWEEN 0 AND 100",
         name = "body_fat_bounds"))
     body_mass_index = Column(Float, CheckConstraint(
         "body_mass_index >= 0", name = "bmi >= 0"))
