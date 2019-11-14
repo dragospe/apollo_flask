@@ -54,8 +54,8 @@ class Activity_Summary(Base):
         CheckConstraint("avg_pace_minutes_per_km >= 0",
             name = "avg_pace_minutes_per_km >= 0"))
     max_pace_minutes_per_km = Column(Integer,
-        CheckConstraint("max_pace_minutes_per_km <= \
-            avg_pace_minutes_per_km", name= "max_pace <= avg_pace"))    
+        CheckConstraint("max_pace_minutes_per_km BETWEEN 0 and avg_pace_minutes_per_km",
+        name= "max_pace <= avg_pace"))
 
     active_kcal = Column(Integer, CheckConstraint("active_kcal >= 0",
         name = "active_kcal >= 0"))
@@ -73,11 +73,10 @@ class Activity_Summary(Base):
             name = "active_lengths >= 0"))
 
     starting_latitude_degrees = Column(Float, CheckConstraint(
-        "starting_latitude_degrees > -90 AND starting_latitude_degrees < 90",
+        "starting_latitude_degrees BETWEEN -90 AND 90",
         name = "starting_latitude bounds"))
     starting_longitude_degrees = Column(Float, CheckConstraint(
-        "starting_longitude_degrees > -180 AND \
-        starting_longitude_degrees < 180", 
+        "starting_longitude_degrees BETWEEN -180 AND 180", 
         name = "starting_longtitude bounds"))
 
     elevation_gain_total_meters = Column(Float, CheckConstraint(
