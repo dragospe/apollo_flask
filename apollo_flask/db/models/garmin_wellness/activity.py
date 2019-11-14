@@ -31,7 +31,6 @@ class Activity_Summary(Base):
     max_heart_rate = Column(Integer, CheckConstraint("max_heart_rate >= \
          avg_heart_rate", name = "avg_hr >= max_hr"))
 
-
     avg_run_cadence_steps_per_minute = Column(Float, 
         CheckConstraint("avg_run_cadence_steps_per_minute >= 0",
             name = "avg_run_cadence >= 0"))
@@ -91,6 +90,9 @@ class Activity_Summary(Base):
     # undocumented. In addition, the "parent_summary_id" field in the 
     # API documentation is listed as "Integer", but summary ID's are strings.
     # Until this is resolved, I'm going to leave these commented out.
+    # (It's probably for stuff like triathlon, where you have different activities happening 
+    # within one session.  So I'm guessing they'd have a parent activity e.g. 'TRIATHLON'
+    # with child activities like 'SWIMMING', 'CYCLING', etc.)
     
 #    is_parent = Column(Boolean) #if this activity has child activities
 #    parent_summary_id = Column(Integer) #present if the activity is a child acitivity
