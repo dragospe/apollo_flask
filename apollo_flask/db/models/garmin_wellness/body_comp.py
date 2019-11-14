@@ -32,8 +32,9 @@ class Body_Composition(Base):
         name= "body_water bounds"))
 
     body_fat_percentage = Column(Float, CheckConstraint(
-        "body_fat_percentage BETWEEN 0 AND 100",
+        "body_fat_percentage BETWEEN 0 AND 100 AND body_fat_percentage + body_water_percentage < 100",
         name = "body_fat_bounds"))
+
     body_mass_index = Column(Float, CheckConstraint(
         "body_mass_index >= 0", name = "bmi >= 0"))
     
