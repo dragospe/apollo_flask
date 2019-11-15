@@ -9,6 +9,7 @@ from apollo_flask.db.models import *
 import os
 import time
 import pytest
+from flask import current_app
 
 ############## Tests #####################
 
@@ -19,13 +20,16 @@ class DummyException(Exception):
 def test_successful_session_scope(app):
     """Ensure a scoped session commits and rolls back appropriately. After
     each operation, make sure the session was closed successfully."""
+
+    session_scope = app.config['SESSION_SCOPE_FUNC']
+
     uid = garmin_oauth.User_Id(user_id = 'test_session_scope_user_id', active= True)
     
     #Check that commits happen properly
-    with db.session_scope() as session:
+    with session_scope() as session:
         session.add(uid)    
 
-    with db.session_scope() as session:
+    with session_scope() as session:
         uid= session.query(garmin_oauth.User_Id).filter_by(
             user_id = 'test_session_scope_user_id').first()
         assert uid ##make sure it's present
@@ -41,22 +45,22 @@ def test_successful_session_scope(app):
     ## context manager, let the session scope catch it and re-raise it,
     ## and then catch it with the pytest.raises context manager.
     with pytest.raises(DummyException):
-        with db.session_scope() as session:
+        with session_scope() as session:
             session.add(garmin_oauth.User_Id(user_id = 'roll_me_back', active = True))
             raise(DummyException)
 
-    with db.session_scope() as session:
+    with session_scope() as session:
         assert not session.query(garmin_oauth.User_Id).filter_by(user_id = 'roll_me_back').first()
 
     #Clean up
-    with db.session_scope() as session:
+    with session_scope() as session:
         session.delete(uid)
 
 
 def test_init_db(app):
     #Check that schema were appropriate loaded
     from sqlalchemy.engine import reflection
-    insp = reflection.Inspector.from_engine(db.engine)
+    insp = reflection.Inspector.from_engine(app.config['ENGINE'])
     assert db.SCHEMA_LIST.sort() == insp.get_schema_names().sort()
 
 

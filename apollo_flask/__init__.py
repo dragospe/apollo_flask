@@ -15,7 +15,9 @@ def create_app(test_config = None):
     #ensure instance folder exists
     os.makedirs(app.instance_path, exist_ok=True)
     
+    # Set up database
     import apollo_flask.db as db
+    app.config['ENGINE'] = db.create_engine(app.config['DATABASE_URI'])
     db.init_app(app)
 
     @app.route('/')

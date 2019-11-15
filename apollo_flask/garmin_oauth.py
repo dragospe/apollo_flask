@@ -17,8 +17,7 @@ from sqlalchemy.exc import IntegrityError
 # The classes for the database objects
 from apollo_flask.db.models.garmin_oauth import *
 from apollo_flask.db.models import Subject
-# Session, engine, and db helper functions
-from apollo_flask.db import engine, session_scope
+
 
 ########################### Blueprint Declaration ##############################
 bp = Blueprint('garmin_oauth', __name__, url_prefix='/oauth/garmin')
@@ -48,7 +47,7 @@ def request_user_access():
     if (request.method == 'POST'):
         sid = request.form['sid']
                
-        with session_scope() as session:        
+        with current_app.config['SESSION_SCOPE_FUNC'] as session:        
             db_sid = session.query(Subject).filter_by(subject_id = sid).one_or_none()
             if db_sid is not None:
                 return render_template('oauth/garmin/consent.html', sid_already_registered = sid)
@@ -91,7 +90,7 @@ def callback():
         return Response(status=400)
 
     #Open a database session
-    with session_scope() as session:
+    with current_app.config['SESSION_SCOPE_FUNC'] as session:
         #Match the request token from the request token secret.
         rt = session.query(Request_Token).filter_by(
             request_token=request_token).one_or_none()
@@ -159,7 +158,7 @@ def deregister_user():
     """Responds to a POST request containing a json dict listing the pending de-registrations"""
     deregs = request.get_json()['deregistrations']
 
-    with session_scope() as session:
+    with current_app.config['SESSION_SCOPE_FUNC'] as session:
         for _ in deregs:
             #Set users to deactivated.
             user = session.query(User_Id).filter_by(user_id = _['userId']).first()

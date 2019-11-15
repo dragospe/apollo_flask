@@ -56,7 +56,7 @@ def test_update_db_from_api_response(app):
     row2 =  Dummy_Table(pk_attr = "123", attr1 = "2", attr3 = True)
     row3 = Dummy_Table(pk_attr = "456", attr1 = "3", attr2 = 3)
 
-    with session_scope() as session:
+    with app.config['SESSION_SCOPE_FUNC']() as session:
         #firt row gets added to a blank db.
         update_db_from_api_response(session, row1)
         
@@ -105,13 +105,13 @@ def test_update_db_from_api_response(app):
 #
 #Feel free to approach with a better strategy.
 
-def test_recieve_activities(client):
+def test_recieve_activities(client, app):
     with open('tests/garmin_api_responses/activities.json', 'r') as f:
          data = json.load(f)
 
     activities = data['activities']
 
-    add_uids(activities)
+    add_uids(activities, app.config['SESSION_SCOPE_FUNC'])
 
     resp = client.post('/api_client/garmin/activities',
                 data= json.dumps(data),
@@ -122,13 +122,13 @@ def test_recieve_activities(client):
                 content_type = 'application/json')
     assert resp.status_code == 200
 
-def test_recieve_body_comps(client):
+def test_recieve_body_comps(client, app):
     with open('tests/garmin_api_responses/body_comps.json', 'r') as f:
          data = json.load(f)
 
     body_comps = data['bodyComps']
 
-    add_uids(body_comps)
+    add_uids(body_comps, app.config['SESSION_SCOPE_FUNC'])
 
     resp = client.post('/api_client/garmin/bodyComps',
                 data= json.dumps(data),
@@ -139,13 +139,13 @@ def test_recieve_body_comps(client):
                 content_type = 'application/json')
     assert resp.status_code == 200
 
-def test_recieve_dailies(client):
+def test_recieve_dailies(client, app):
     with open('tests/garmin_api_responses/dailies.json', 'r') as f:
          data = json.load(f)
 
     dailies = data['dailies']
 
-    add_uids(dailies)
+    add_uids(dailies, app.config['SESSION_SCOPE_FUNC'])
 
     resp = client.post('/api_client/garmin/dailies',
                 data= json.dumps(data),
@@ -156,13 +156,13 @@ def test_recieve_dailies(client):
                 content_type = 'application/json')
     assert resp.status_code == 200
 
-def test_recieve_epochs(client):
+def test_recieve_epochs(client, app):
     with open('tests/garmin_api_responses/epochs.json', 'r') as f:
          data = json.load(f)
 
     epochs = data['epochs']
 
-    add_uids(epochs)
+    add_uids(epochs, app.config['SESSION_SCOPE_FUNC'])
 
     resp = client.post('/api_client/garmin/epochs',
                 data= json.dumps(data),
@@ -173,13 +173,13 @@ def test_recieve_epochs(client):
                 content_type = 'application/json')
     assert resp.status_code == 200
 
-def test_recieve_move_iq(client):
+def test_recieve_move_iq(client, app):
     with open('tests/garmin_api_responses/moveiq.json', 'r') as f:
          data = json.load(f)
 
     moveiq = data['moveIQActivities']
 
-    add_uids(moveiq)
+    add_uids(moveiq, app.config['SESSION_SCOPE_FUNC'])
 
     resp = client.post('/api_client/garmin/moveiq',
                 data= json.dumps(data),
@@ -190,13 +190,13 @@ def test_recieve_move_iq(client):
                 content_type = 'application/json')
     assert resp.status_code == 200
 
-def test_recieve_pulse_ox(client):
+def test_recieve_pulse_ox(client, app):
     with open('tests/garmin_api_responses/pulse_ox.json', 'r') as f:
          data = json.load(f)
 
     pulseox = data['pulseox']
 
-    add_uids(pulseox)
+    add_uids(pulseox, app.config['SESSION_SCOPE_FUNC'])
 
     resp = client.post('/api_client/garmin/pulseOx',
                 data= json.dumps(data),
@@ -209,13 +209,13 @@ def test_recieve_pulse_ox(client):
 
 
 
-def test_recieve_sleep(client):
+def test_recieve_sleep(client, app):
     with open('tests/garmin_api_responses/sleeps.json', 'r') as f:
          data = json.load(f)
 
     sleeps = data['sleeps']
 
-    add_uids(sleeps)
+    add_uids(sleeps, app.config['SESSION_SCOPE_FUNC'])
 
     resp = client.post('/api_client/garmin/sleeps',
                 data= json.dumps(data),
@@ -226,13 +226,13 @@ def test_recieve_sleep(client):
                 content_type = 'application/json')
     assert resp.status_code == 200
 
-def test_recieve_stress(client):
+def test_recieve_stress(client, app):
     with open('tests/garmin_api_responses/stress_details.json', 'r') as f:
          data = json.load(f)
 
     stress_details = data['stressDetails']
 
-    add_uids(stress_details)
+    add_uids(stress_details, app.config['SESSION_SCOPE_FUNC'])
 
     resp = client.post('/api_client/garmin/stressDetails',
                 data= json.dumps(data),
@@ -243,13 +243,13 @@ def test_recieve_stress(client):
                 content_type = 'application/json')
     assert resp.status_code == 200
 
-def test_recieve_user_metrics(client):
+def test_recieve_user_metrics(client,app):
     with open('tests/garmin_api_responses/user_metrics_summaries.json', 'r') as f:
          data = json.load(f)
 
     user_metrics = data['userMetrics']
 
-    add_uids(user_metrics)
+    add_uids(user_metrics, app.config['SESSION_SCOPE_FUNC'])
 
     resp = client.post('/api_client/garmin/userMetrics',
                 data= json.dumps(data),
@@ -266,7 +266,7 @@ def test_recieve_user_metrics(client):
 
 
 ############## Helpers ################
-def add_uids(json_data):
+def add_uids(json_data, session_scope):
     """Adds uids so the FK check passes in test_recieve_* tests."""
     with session_scope() as session:
         for summary in json_data:

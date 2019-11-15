@@ -13,8 +13,9 @@ os.environ['DEFAULT_DATABASE_URI'] = 'postgresql://postgres@127.0.0.1/postgres'
 
 
 
-from apollo_flask.db import init_db, session_scope, engine
+from apollo_flask.db import init_db
 from apollo_flask.db.models import *
+
 
 #################################### Fixtures #################################
 @pytest.fixture(scope="function")
@@ -31,7 +32,7 @@ def app():
     yield app
 
     #Dispose of engine (close all open DBAPI connections to the database)
-    engine.dispose()
+    app.config['ENGINE'].dispose()
     print("Engine disposed")
 
 @pytest.fixture

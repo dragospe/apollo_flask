@@ -3,10 +3,10 @@ import functools
 import json
 
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for, Response
+    Blueprint, flash, g, redirect, render_template, request, session, url_for,
+    Response, current_app
 )
 
-from apollo_flask.db import session_scope, engine
 from apollo_flask.db.models.garmin_wellness import *
 from apollo_flask.db.models import Subject
 from sqlalchemy.inspection import inspect
@@ -18,10 +18,12 @@ import dateutil.parser
 
 bp = Blueprint('garmin_api_client', __name__, url_prefix='/api_client/garmin')
 
+
+
 @bp.route('/dailies', methods=['POST'])
 def recieve_dailies():
     dailies = request.get_json()['dailies']
-    with session_scope() as session:
+    with current_app.config['SESSION_SCOPE_FUNC']() as session:
         for summary in dailies:
             daily = daily_summary.Daily_Summary(
                 sid = uid2sid(session,summary.get('userId')),
@@ -80,7 +82,7 @@ def recieve_dailies():
             
             update_db_from_api_response(session, daily)
             if summary.get('timeOffsetHeartRateSamples') != {}:
-                upsert_time_value_map(engine, summary.get('timeOffsetHeartRateSamples'),
+                upsert_time_value_map(current_app.config['ENGINE'], summary.get('timeOffsetHeartRateSamples'),
                     daily.start_time_local, daily.sid, heart_rate_sample.Heart_Rate_Sample)
 
     return Response(status=200)
@@ -91,7 +93,7 @@ def recieve_activities():
     # I can't find any documentation on this except that it may exist. See the
     # Garmin Wellness Activity_Summary data model for more details.
     activities = request.get_json()['activities']
-    with session_scope() as session:
+    with current_app.config['SESSION_SCOPE_FUNC']() as session:
         for summary in activities:
             activity_summary = activity.Activity_Summary(
                 sid = uid2sid(session,summary.get('userId')),
@@ -150,7 +152,7 @@ def recieve_activities():
 @bp.route('/epochs', methods=['POST'])
 def recieve_epochs():
     epochs = request.get_json()['epochs']
-    with session_scope() as session:
+    with current_app.config['SESSION_SCOPE_FUNC']() as session:
         for summary in epochs:
             epoch_summary = epoch.Epoch_Summary(
                 sid = uid2sid(session,summary.get('userId')),
@@ -193,7 +195,7 @@ def recieve_sleeps():
     update sleep data is to take the most recent response recieved.
     """
     sleeps = request.get_json()['sleeps']
-    with session_scope() as session:
+    with current_app.config['SESSION_SCOPE_FUNC']() as session:
         for summary in sleeps:
             sleep_summary = sleep.Sleep_Summary(
                 sid = uid2sid(session,summary.get('userId')),
@@ -247,7 +249,7 @@ def recieve_sleeps():
 @bp.route('/bodyComps', methods=['POST'])
 def recieve_body_comp():
     body_comps = request.get_json()['bodyComps']
-    with session_scope() as session:
+    with current_app.config['SESSION_SCOPE_FUNC']() as session:
         for summary in body_comps:
             bc = body_comp.Body_Composition(
                 sid = uid2sid(session,summary.get('userId')),
@@ -273,7 +275,7 @@ def recieve_body_comp():
 @bp.route('/stressDetails', methods=['POST'])
 def recieve_stress_details():
     stress_details = request.get_json()['stressDetails']
-    with session_scope() as session:
+    with current_app.config['SESSION_SCOPE_FUNC']() as session:
         for summary in stress_details:
                 sid = uid2sid(session,summary.get('userId'))
                 start_time_local = datetime.fromtimestamp(summary.get('startTimeInSeconds')
@@ -290,7 +292,7 @@ def recieve_stress_details():
                     # Make sure there are samples actually left:
                     if sample_map != {}:
                         upsert_time_value_map(
-                            engine, 
+                            current_app.config['ENGINE'], 
                             sample_map,
                             start_time_local, 
                             sid, 
@@ -298,7 +300,7 @@ def recieve_stress_details():
 
                 if summary.get('timeOffsetBodyBatteryValues') is not None:
                     upsert_time_value_map(
-                        engine,
+                        current_app.config['ENGINE'],
                         summary.get('timeOffsetBodyBatteryValues'),
                         start_time_local,
                         sid,
@@ -311,7 +313,7 @@ def recieve_stress_details():
 @bp.route('/userMetrics', methods=['POST'])
 def recieve_user_metrics():
     user_metrics_summaries = request.get_json()['userMetrics']
-    with session_scope() as session:
+    with current_app.config['SESSION_SCOPE_FUNC']() as session:
         for summary in user_metrics_summaries:
             metric_summary = user_metrics.User_Metrics(
                 sid = uid2sid(session,summary.get('userId')),
@@ -330,7 +332,7 @@ def recieve_user_metrics():
 def recieve_moveiq():
 
     move_iq_summaries = request.get_json()['moveIQActivities']
-    with session_scope() as session:
+    with current_app.config['SESSION_SCOPE_FUNC']() as session:
         for summary in move_iq_summaries:
             move_iq_summary = move_iq.Move_Iq(
                 sid = uid2sid(session,summary.get('userId')),
@@ -349,7 +351,7 @@ def recieve_moveiq():
 @bp.route('/pulseOx', methods=['POST'])
 def recieve_pulseox():
     pulse_ox_summaries = request.get_json()['pulseox']
-    with session_scope() as session:
+    with current_app.config['SESSION_SCOPE_FUNC']() as session:
         for summary in pulse_ox_summaries:
             sid = uid2sid(session,summary.get('userId'))
             
@@ -358,7 +360,7 @@ def recieve_pulseox():
             
             if summary.get('timeOffsetSpo2Values') is not None:
                 upsert_time_value_map(
-                    engine,
+                    current_app.config['ENGINE'],
                     summary.get('timeOffsetSpo2Values'),
                     start_time_local,
                     sid,
