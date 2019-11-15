@@ -26,9 +26,9 @@ class Activity_Summary(Base):
          CheckConstraint("max_bike_cadence_rounds_per_minute >=  \
             avg_bike_cadence_rounds_per_minute", name = "max_bike >= avg_bike"))
 
-    avg_heart_rate = Column(Integer, CheckConstraint("avg_heart_rate >= 0",
+    avg_heart_rate = Column(Float, CheckConstraint("avg_heart_rate >= 0",
         name = "avg_heart_rate >= 0"))
-    max_heart_rate = Column(Integer, CheckConstraint("max_heart_rate >= \
+    max_heart_rate = Column(Float, CheckConstraint("max_heart_rate >= \
          avg_heart_rate", name = "avg_hr >= max_hr"))
 
     avg_run_cadence_steps_per_minute = Column(Float, 
@@ -50,10 +50,10 @@ class Activity_Summary(Base):
         CheckConstraint("avg_swim_cadence_strokes_per_minute >= 0", 
             name= "avg_swim_cadence >= 0")) 
     
-    avg_pace_minutes_per_km = Column(Integer, 
+    avg_pace_minutes_per_km = Column(Float, 
         CheckConstraint("avg_pace_minutes_per_km >= 0",
             name = "avg_pace_minutes_per_km >= 0"))
-    max_pace_minutes_per_km = Column(Integer,
+    max_pace_minutes_per_km = Column(Float,
         CheckConstraint("max_pace_minutes_per_km BETWEEN 0 and avg_pace_minutes_per_km",
         name= "max_pace <= avg_pace"))
 
