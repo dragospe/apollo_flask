@@ -12,7 +12,6 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 
 Base = declarative_base()
-engine = create_engine(environ['DATABASE_URI'])
 
 ########################### Context Managers ########################
 from contextlib import contextmanager
@@ -36,22 +35,7 @@ SCHEMA_LIST = ['garmin_oauth', 'garmin_wellness']
 
 ################################## Methods #############################
 
-
-@contextmanager
-def session_scope():
-    """Provide a transactional scope around a series of database operations."""
-    _Session = sessionmaker(bind = engine)
-    _session = _Session()
-    try:
-        yield _session
-        _session.commit()
-    except:
-        _session.rollback()
-        _session.close()
-        raise
-    finally:
-        _session.close()
-
+    
 def init_db():
     """Deletes the database (if it exists) and recreates."""
     
@@ -78,7 +62,8 @@ def init_db():
     _conn.execute('CREATE DATABASE "' + current_app.config['DATABASE_NAME'] + '"')
     _conn.close()    
     
-
+    engine = current_app.config['ENGINE']
+    
     # Create schemas in SCHEMA_LIST
     from sqlalchemy.schema import CreateSchema
     list(map(lambda x : engine.execute(CreateSchema(x)),SCHEMA_LIST))
@@ -96,5 +81,22 @@ def init_db_command():
 def init_app(app):
     """Register database functions with the app.""" 
     app.cli.add_command(init_db_command)
+    
+    @contextmanager
+    def session_scope():
+        """Provide a transactional scope around a series of database operations."""
+        _Session = sessionmaker(bind = app.config['ENGINE'])
+        _session = _Session()
+        try:
+            yield _session
+            _session.commit()
+        except:
+            _session.rollback()
+            _session.close()
+            raise
+        finally:
+            _session.close()
+
+    app.config['SESSION_SCOPE_FUNC'] = session_scope
 
 
