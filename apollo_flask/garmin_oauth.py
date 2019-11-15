@@ -47,7 +47,7 @@ def request_user_access():
     if (request.method == 'POST'):
         sid = request.form['sid']
                
-        with current_app.config['SESSION_SCOPE_FUNC'] as session:        
+        with current_app.config['SESSION_SCOPE_FUNC']() as session:        
             db_sid = session.query(Subject).filter_by(subject_id = sid).one_or_none()
             if db_sid is not None:
                 return render_template('oauth/garmin/consent.html', sid_already_registered = sid)
@@ -90,7 +90,7 @@ def callback():
         return Response(status=400)
 
     #Open a database session
-    with current_app.config['SESSION_SCOPE_FUNC'] as session:
+    with current_app.config['SESSION_SCOPE_FUNC']() as session:
         #Match the request token from the request token secret.
         rt = session.query(Request_Token).filter_by(
             request_token=request_token).one_or_none()
@@ -158,19 +158,24 @@ def deregister_user():
     """Responds to a POST request containing a json dict listing the pending de-registrations"""
     deregs = request.get_json()['deregistrations']
 
-    with current_app.config['SESSION_SCOPE_FUNC'] as session:
+    with current_app.config['SESSION_SCOPE_FUNC']() as session:
         for _ in deregs:
             #Set users to deactivated.
-            user = session.query(User_Id).filter_by(user_id = _['userId']).first()
-            session.add(user)
-            user.active=False
+            user = session.query(User_Id).filter_by(user_id = _['userId']).one_or_none()
+            if user is not None:
+                session.add(user)
+                user.active=False
+            else:
+                current_app.logger.info('Deregistration for use %s recieved,\
+                    but user does not exist.', _['userId'])
 
             #Delete their access tokens.
             tokens = session.query(Access_Token).filter_by(user_id = _['userId']).all()
-            for _ in tokens:
-                session.delete(_)
+            for token in tokens:
+                if token is not None:
+                    session.delete(token)
 
-    return 'Deregistered.'
+    return Response(status=200)
 
 def get_oauth_session(access_token, access_token_secret):
     """Helper function to return an authenticated session object for the given

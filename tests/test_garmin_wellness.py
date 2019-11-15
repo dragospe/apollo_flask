@@ -6,6 +6,7 @@ from apollo_flask.db.models.garmin_wellness import *
 from apollo_flask.db.models.garmin_oauth import *
 from apollo_flask.db.models.lib import *
 from datetime import timedelta
+from conftest import add_uids
 import json
 
 
@@ -259,33 +260,3 @@ def test_recieve_user_metrics(client,app):
                 data= json.dumps(data),
                 content_type = 'application/json')
     assert resp.status_code == 200
-
-
-
-
-
-
-############## Helpers ################
-def add_uids(json_data, session_scope):
-    """Adds uids so the FK check passes in test_recieve_* tests."""
-    with session_scope() as session:
-        for summary in json_data:
-            new_uid = User_Id(user_id = summary['userId'], 
-                                active=True)
- 
-            #Check if UID exists in the db already
-            db_uid = session.query(User_Id).filter_by(
-                    user_id = new_uid.user_id).one_or_none()
-
-            #Make sure its active if so
-            if db_uid is not None:
-                db_uid.active=True
-            else: #Add it and an SID if not.
-                session.add(new_uid)
-                session.commit()
-                subject = Subject(subject_id='Subject' + new_uid.user_id, 
-                                  garmin_uid = new_uid.user_id)
-                session.add(subject)
-            
-
-

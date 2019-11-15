@@ -3,6 +3,7 @@ import sqlalchemy
 from sqlalchemy.pool import NullPool
 import pytest
 from apollo_flask import create_app
+from apollo_flask.db.models.garmin_oauth import User_Id
 import time
 import secrets
 
@@ -61,4 +62,26 @@ def client(app):
 def runner(app):
     return app.test_cli_runner()
 
+
+def add_uids(json_data, session_scope):
+    """Adds uids so the FK check passes in test_recieve_* tests."""
+    with session_scope() as session:
+        for summary in json_data:
+            new_uid = User_Id(user_id = summary['userId'], 
+                                active=True)
+ 
+            #Check if UID exists in the db already
+            db_uid = session.query(User_Id).filter_by(
+                    user_id = new_uid.user_id).one_or_none()
+
+            #Make sure its active if so
+            if db_uid is not None:
+                db_uid.active=True
+            else: #Add it and an SID if not.
+                session.add(new_uid)
+                session.commit()
+                subject = Subject(subject_id='Subject' + new_uid.user_id, 
+                                  garmin_uid = new_uid.user_id)
+                session.add(subject)
+            
 
