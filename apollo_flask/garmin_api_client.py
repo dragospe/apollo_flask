@@ -135,8 +135,9 @@ def recieve_activities():
         
                 number_of_active_lengths = summary.get('numberOfActiveLengths'),
                 
-                starting_latitude_degrees = summary.get('startingLatitudeInDegree'),
-                starting_longitude_degrees = summary.get('startingLongitudeInDegree'),
+                # Probably need IRB approval before we start tracking location
+                #starting_latitude_degrees = summary.get('startingLatitudeInDegree'),
+                #starting_longitude_degrees = summary.get('startingLongitudeInDegree'),
                 
                 elevation_gain_total_meters = summary.get('totalElevationGainInMeters'), 
                 elevation_loss_total_meters = summary.get('totalElevationLossInMeter'),

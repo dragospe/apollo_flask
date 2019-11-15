@@ -72,12 +72,13 @@ class Activity_Summary(Base):
         CheckConstraint("number_of_active_lengths >= 0",
             name = "active_lengths >= 0"))
 
-    starting_latitude_degrees = Column(Float, CheckConstraint(
-        "starting_latitude_degrees BETWEEN -90 AND 90",
-        name = "starting_latitude bounds"))
-    starting_longitude_degrees = Column(Float, CheckConstraint(
-        "starting_longitude_degrees BETWEEN -180 AND 180", 
-        name = "starting_longtitude bounds"))
+    ## Probably need IRB approval before we start collecting this
+    #starting_latitude_degrees = Column(Float, CheckConstraint(
+    #    "starting_latitude_degrees BETWEEN -90 AND 90",
+    #    name = "starting_latitude bounds"))
+    #starting_longitude_degrees = Column(Float, CheckConstraint(
+    #    "starting_longitude_degrees BETWEEN -180 AND 180", 
+    #    name = "starting_longtitude bounds"))
 
     elevation_gain_total_meters = Column(Float, CheckConstraint(
         "elevation_gain_total_meters >= 0"))
