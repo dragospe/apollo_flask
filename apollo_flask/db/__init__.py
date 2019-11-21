@@ -82,10 +82,10 @@ def init_app(app):
     """Register database functions with the app.""" 
     app.cli.add_command(init_db_command)
     
+    _Session = sessionmaker(bind = app.config['ENGINE'])
     @contextmanager
     def session_scope():
         """Provide a transactional scope around a series of database operations."""
-        _Session = sessionmaker(bind = app.config['ENGINE'])
         _session = _Session()
         try:
             yield _session
@@ -97,6 +97,6 @@ def init_app(app):
         finally:
             _session.close()
 
-    app.config['SESSION_SCOPE_FUNC'] = session_scope
+    app.session_scope = session_scope
 
 

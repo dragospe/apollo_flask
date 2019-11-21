@@ -21,7 +21,7 @@ def test_successful_session_scope(app):
     """Ensure a scoped session commits and rolls back appropriately. After
     each operation, make sure the session was closed successfully."""
 
-    session_scope = app.config['SESSION_SCOPE_FUNC']
+    session_scope = app.session_scope
 
     uid = garmin_oauth.User_Id(user_id = 'test_session_scope_user_id', active= True)
     

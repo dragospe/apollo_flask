@@ -57,7 +57,7 @@ def test_update_db_from_api_response(app):
     row2 =  Dummy_Table(pk_attr = "123", attr1 = "2", attr3 = True)
     row3 = Dummy_Table(pk_attr = "456", attr1 = "3", attr2 = 3)
 
-    with app.config['SESSION_SCOPE_FUNC']() as session:
+    with app.session_scope() as session:
         #firt row gets added to a blank db.
         update_db_from_api_response(session, row1)
         
@@ -112,7 +112,7 @@ def test_recieve_activities(client, app):
 
     activities = data['activities']
 
-    add_uids(activities, app.config['SESSION_SCOPE_FUNC'])
+    add_uids(activities, app.session_scope)
 
     resp = client.post('/api_client/garmin/activities',
                 data= json.dumps(data),
@@ -129,7 +129,7 @@ def test_recieve_body_comps(client, app):
 
     body_comps = data['bodyComps']
 
-    add_uids(body_comps, app.config['SESSION_SCOPE_FUNC'])
+    add_uids(body_comps, app.session_scope)
 
     resp = client.post('/api_client/garmin/bodyComps',
                 data= json.dumps(data),
@@ -146,7 +146,7 @@ def test_recieve_dailies(client, app):
 
     dailies = data['dailies']
 
-    add_uids(dailies, app.config['SESSION_SCOPE_FUNC'])
+    add_uids(dailies, app.session_scope)
 
     resp = client.post('/api_client/garmin/dailies',
                 data= json.dumps(data),
@@ -163,7 +163,7 @@ def test_recieve_epochs(client, app):
 
     epochs = data['epochs']
 
-    add_uids(epochs, app.config['SESSION_SCOPE_FUNC'])
+    add_uids(epochs, app.session_scope)
 
     resp = client.post('/api_client/garmin/epochs',
                 data= json.dumps(data),
@@ -180,7 +180,7 @@ def test_recieve_move_iq(client, app):
 
     moveiq = data['moveIQActivities']
 
-    add_uids(moveiq, app.config['SESSION_SCOPE_FUNC'])
+    add_uids(moveiq, app.session_scope)
 
     resp = client.post('/api_client/garmin/moveiq',
                 data= json.dumps(data),
@@ -197,7 +197,7 @@ def test_recieve_pulse_ox(client, app):
 
     pulseox = data['pulseox']
 
-    add_uids(pulseox, app.config['SESSION_SCOPE_FUNC'])
+    add_uids(pulseox, app.session_scope)
 
     resp = client.post('/api_client/garmin/pulseOx',
                 data= json.dumps(data),
@@ -216,7 +216,7 @@ def test_recieve_sleep(client, app):
 
     sleeps = data['sleeps']
 
-    add_uids(sleeps, app.config['SESSION_SCOPE_FUNC'])
+    add_uids(sleeps, app.session_scope)
 
     resp = client.post('/api_client/garmin/sleeps',
                 data= json.dumps(data),
@@ -233,7 +233,7 @@ def test_recieve_stress(client, app):
 
     stress_details = data['stressDetails']
 
-    add_uids(stress_details, app.config['SESSION_SCOPE_FUNC'])
+    add_uids(stress_details, app.session_scope)
 
     resp = client.post('/api_client/garmin/stressDetails',
                 data= json.dumps(data),
@@ -250,7 +250,7 @@ def test_recieve_user_metrics(client,app):
 
     user_metrics = data['userMetrics']
 
-    add_uids(user_metrics, app.config['SESSION_SCOPE_FUNC'])
+    add_uids(user_metrics, app.session_scope)
 
     resp = client.post('/api_client/garmin/userMetrics',
                 data= json.dumps(data),

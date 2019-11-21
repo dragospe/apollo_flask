@@ -12,7 +12,7 @@ def test_degistration(client,app):
 
     deregs = data['deregistrations']
     
-    add_uids(deregs, app.config['SESSION_SCOPE_FUNC'])
+    add_uids(deregs, app.session_scope)
     
     
     resp = client.post('/oauth/garmin/deregistration',

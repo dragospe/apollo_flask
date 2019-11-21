@@ -23,7 +23,7 @@ bp = Blueprint('garmin_api_client', __name__, url_prefix='/api_client/garmin')
 @bp.route('/dailies', methods=['POST'])
 def recieve_dailies():
     dailies = request.get_json()['dailies']
-    with current_app.config['SESSION_SCOPE_FUNC']() as session:
+    with current_app.session_scope() as session:
         for summary in dailies:
             daily = daily_summary.Daily_Summary(
                 sid = uid2sid(session,summary.get('userId')),
@@ -93,7 +93,7 @@ def recieve_activities():
     # I can't find any documentation on this except that it may exist. See the
     # Garmin Wellness Activity_Summary data model for more details.
     activities = request.get_json()['activities']
-    with current_app.config['SESSION_SCOPE_FUNC']() as session:
+    with current_app.session_scope() as session:
         for summary in activities:
             activity_summary = activity.Activity_Summary(
                 sid = uid2sid(session,summary.get('userId')),
@@ -153,7 +153,7 @@ def recieve_activities():
 @bp.route('/epochs', methods=['POST'])
 def recieve_epochs():
     epochs = request.get_json()['epochs']
-    with current_app.config['SESSION_SCOPE_FUNC']() as session:
+    with current_app.session_scope() as session:
         for summary in epochs:
             epoch_summary = epoch.Epoch_Summary(
                 sid = uid2sid(session,summary.get('userId')),
@@ -196,7 +196,7 @@ def recieve_sleeps():
     update sleep data is to take the most recent response recieved.
     """
     sleeps = request.get_json()['sleeps']
-    with current_app.config['SESSION_SCOPE_FUNC']() as session:
+    with current_app.session_scope() as session:
         for summary in sleeps:
             sleep_summary = sleep.Sleep_Summary(
                 sid = uid2sid(session,summary.get('userId')),
@@ -250,7 +250,7 @@ def recieve_sleeps():
 @bp.route('/bodyComps', methods=['POST'])
 def recieve_body_comp():
     body_comps = request.get_json()['bodyComps']
-    with current_app.config['SESSION_SCOPE_FUNC']() as session:
+    with current_app.session_scope() as session:
         for summary in body_comps:
             bc = body_comp.Body_Composition(
                 sid = uid2sid(session,summary.get('userId')),
@@ -276,7 +276,7 @@ def recieve_body_comp():
 @bp.route('/stressDetails', methods=['POST'])
 def recieve_stress_details():
     stress_details = request.get_json()['stressDetails']
-    with current_app.config['SESSION_SCOPE_FUNC']() as session:
+    with current_app.session_scope() as session:
         for summary in stress_details:
                 sid = uid2sid(session,summary.get('userId'))
                 start_time_local = datetime.fromtimestamp(summary.get('startTimeInSeconds')
@@ -314,7 +314,7 @@ def recieve_stress_details():
 @bp.route('/userMetrics', methods=['POST'])
 def recieve_user_metrics():
     user_metrics_summaries = request.get_json()['userMetrics']
-    with current_app.config['SESSION_SCOPE_FUNC']() as session:
+    with current_app.session_scope() as session:
         for summary in user_metrics_summaries:
             metric_summary = user_metrics.User_Metrics(
                 sid = uid2sid(session,summary.get('userId')),
@@ -333,7 +333,7 @@ def recieve_user_metrics():
 def recieve_moveiq():
 
     move_iq_summaries = request.get_json()['moveIQActivities']
-    with current_app.config['SESSION_SCOPE_FUNC']() as session:
+    with current_app.session_scope() as session:
         for summary in move_iq_summaries:
             move_iq_summary = move_iq.Move_Iq(
                 sid = uid2sid(session,summary.get('userId')),
@@ -352,7 +352,7 @@ def recieve_moveiq():
 @bp.route('/pulseOx', methods=['POST'])
 def recieve_pulseox():
     pulse_ox_summaries = request.get_json()['pulseox']
-    with current_app.config['SESSION_SCOPE_FUNC']() as session:
+    with current_app.session_scope() as session:
         for summary in pulse_ox_summaries:
             sid = uid2sid(session,summary.get('userId'))
             
