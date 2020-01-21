@@ -352,6 +352,11 @@ def recieve_moveiq():
 @bp.route('/pulseOx', methods=['POST'])
 def recieve_pulseox():
     pulse_ox_summaries = request.get_json()['pulseox']
+
+    with open('pulseox.json.dump','w') as f:
+        json.dump(pulse_ox_summaries, f)
+
+
     with current_app.session_scope() as session:
         for summary in pulse_ox_summaries:
             sid = uid2sid(session,summary.get('userId'))

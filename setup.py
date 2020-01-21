@@ -15,7 +15,7 @@ setup(
         'rauth',
         'requests',
         'pytest',
-        'dateuitl',
+        'python-dateutil',
         'gunicorn'
     ],
     classifiers = ["Programming Language :: Python :: 3"],
