@@ -14,7 +14,9 @@ setup(
         'sqlalchemy',
         'rauth',
         'requests',
-        'pytest'
+        'pytest',
+        'dateuitl',
+        'gunicorn'
     ],
     classifiers = ["Programming Language :: Python :: 3"],
 )
