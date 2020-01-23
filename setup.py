@@ -16,7 +16,8 @@ setup(
         'requests',
         'pytest',
         'python-dateutil',
-        'gunicorn'
+        'gunicorn',
+        'psycopg2-binary',
     ],
     classifiers = ["Programming Language :: Python :: 3"],
 )
