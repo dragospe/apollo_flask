@@ -50,7 +50,7 @@ def request_user_access():
         with current_app.session_scope() as session:        
             db_sid = session.query(Subject).filter_by(subject_id = sid).one_or_none()
             if db_sid is not None:
-                return render_template('oauth/garmin/consent.html', sid_already_registered = sid, project_name = PROJECT_NAME)
+                return render_template('oauth/garmin/consent.html', sid_already_registered = sid, project_name = current_app.config['PROJECT NAME'])
 
 
             service = get_garmin_oauth_service()
@@ -71,7 +71,7 @@ def request_user_access():
         #Redirect the user to the garmin.com consent page.
         return redirect(auth_url)
 
-    return render_template('oauth/garmin/consent.html', project_name = PROJECT_NAME)
+    return render_template('oauth/garmin/consent.html', project_name = current_app.config['PROJECT NAME'])
 
 @bp.route('/callback')
 def callback():
@@ -116,11 +116,11 @@ def callback():
         #Check if the SID from the db is already associated with a different garmin UID
         if db_sid is not None and db_sid.garmin_uid != uid.user_id:
             return Response(status = 409, response = render_template('oauth/garmin/callback.html',
-                     sid_already_associated=rt.sid, project_name = PROJECT_NAME))
+                     sid_already_associated=rt.sid, project_name = current_app.config['PROJECT NAME']))
         #Check if the garmin account in question is already associated with a different SID
         elif db_sid is None and db_subject_uid is not None:
             return Response(status = 409, response = render_template('oauth/garmin/callback.html',
-                    uid_already_associated_with_sid = db_subject_uid, project_name = PROJECT_NAME))
+                    uid_already_associated_with_sid = db_subject_uid, project_name = current_app.config['PROJECT NAME']))
         #If the garmin account exists, but is inactive, make it active
         elif db_uid is not None:
             db_uid.active=True 
@@ -153,7 +153,7 @@ def callback():
     return Response(status = 202,
                response = render_template('oauth/garmin/callback.html', 
                                           sid_success=sid, 
-                                          project_name = PROJECT_NAME))
+                                          project_name = current_app.config['PROJECT NAME']))
 
 @bp.route('/deregistration', methods=['POST'])
 def deregister_user():
