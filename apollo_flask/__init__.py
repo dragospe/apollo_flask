@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template
+from flask import Flask, render_template, current_app
 
 def create_app(test_config = None):
     #Second argument ensures configuration is loaded from the instance folder
@@ -22,7 +22,8 @@ def create_app(test_config = None):
 
     @app.route('/')
     def homepage():
-        return render_template('index.html')
+        return render_template('index.html',
+                               project_name = current_app.config['PROJECT_NAME'])
     
     from . import garmin_oauth
     app.register_blueprint(garmin_oauth.bp) 
