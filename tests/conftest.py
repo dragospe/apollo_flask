@@ -1,7 +1,7 @@
 ### Add the instance folder to the path. We modify the variables 
 # declared in instance/config.py to set up the testing databases.
 import sys
-sys.path.append('../instance')
+sys.path.append('venv/var/apollo_flask-instance')
 from config import *
 
 import os
@@ -50,7 +50,7 @@ def app():
     _conn.execute('commit')
 
     # Drop the database 
-    _conn.execute('DROP DATABASE "' + database_name + '"')
+    _conn.execute('DROP DATABASE "' + app.config['DATABASE_NAME'] + '"')
     print("INFO: Database dropped.")
     _conn.execute('commit')
 
