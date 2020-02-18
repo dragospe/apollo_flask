@@ -1,0 +1,3 @@
+graft apollo_flask/static
+graft apollo_flask/templates
+global-exclude *.pyc
