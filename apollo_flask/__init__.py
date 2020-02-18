@@ -4,7 +4,6 @@ from flask import Flask, render_template, current_app
 def create_app(test_config = None):
     #Second argument ensures configuration is loaded from the instance folder
     app = Flask(__name__, instance_relative_config=True)
-
     if test_config is None:
         # load the instance config, if it exists, when not testing
         app.config.from_pyfile('config.py', silent=False)
