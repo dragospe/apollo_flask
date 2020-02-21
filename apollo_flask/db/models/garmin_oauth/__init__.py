@@ -1,8 +1,5 @@
 """Configuration for storing OAuth/OpenID data"""
 
-from apollo_flask.db.models.lib import *
-from apollo_flask.db.models import *
-
 ################################## Classes: ###################################
 
 class User_Id(Base):
