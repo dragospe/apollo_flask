@@ -1,7 +1,11 @@
+"""
+This module contains imports to minimize the need for separate imports.
+"""
+
 #Package imports (to minimize the imports needed for each file in 'models')
 import sqlalchemy
 from sqlalchemy import (Column, Integer, Float, String, Enum, DateTime, Date,
-    ForeignKey, CheckConstraint, Boolean, UniqueConstraint)
+                        ForeignKey, CheckConstraint, Boolean, UniqueConstraint)
 
 from sqlalchemy.dialects.postgresql import INTERVAL
 
@@ -30,33 +34,33 @@ ACTIVITY_TYPE_ENUM = Enum(
     'SAILING', 'SKATE_SKIING', 'SKATING', 'SNOWMOBILING', 'SNOW_SHOE',
     'STAND_UP_PADDLEBOARDING', 'WHITEWATER_RAFTING_KAYAKING',
     'WIND_KITE_SURFING', 'UNMONITORED',
-    name = 'Activity_Type',
-    schema = 'garmin_wellness'
+    name='Activity_Type',
+    schema='garmin_wellness'
 )
 
 STRESS_QUALIFIER_ENUM = Enum(
     'unknown', 'calm', 'balanced', 'stressful',
     'very_stressful', 'calm_awake', 'balanced_awake',
     'stressful_awake', 'very_stressful_awake',
-    name = "Stress_Qualifier",
-    schema = 'garmin_wellness'
+    name="Stress_Qualifier",
+    schema='garmin_wellness'
 )
 
 #From appendix B of the API specification
 WELLNESS_MONITORING_INTENSITY_ENUM = Enum(
     'SEDENTARY', 'ACTIVE', 'HIGHLY_ACTIVE',
-    name = 'Wellness_Monitoring_Intensity',
-    schema = 'garmin_wellness'
+    name='Wellness_Monitoring_Intensity',
+    schema='garmin_wellness'
 )
 
 #From section 7.8 of the API specification
 SLEEP_VALIDATION_ENUM = Enum(
     'MANUAL', 'DEVICE', 'AUTO_TENTATIVE', 'AUTO_FINAL', 'AUTO_MANUAL',
     'ENHANCED_TENTATIVE', 'ENHANCED_FINAL',
-    name = 'Sleep_Validation',
-    schema = 'garmin_wellness'
+    name='Sleep_Validation',
+    schema='garmin_wellness'
 )
 
 SLEEP_QUALIFIER_ENUM = Enum(
     'deep', 'light', 'rem', 'awake', 'unmeasurable',
-     name = 'Sleep_Qualifier', schema = 'garmin_wellness')
+    name='Sleep_Qualifier', schema='garmin_wellness')
